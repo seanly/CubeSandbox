@@ -21,6 +21,7 @@ export default withMermaid(defineConfig({
           { text: 'Home', link: '/' },
           { text: 'Guide', link: '/guide/introduction' },
           { text: 'Architecture', link: '/architecture/overview' },
+          { text: 'Reference', link: '/issues/' },
           { text: 'About us', link: '/about-us' },
           { text: 'Changelog', link: '/changelog' },
           { text: 'GitHub', link: 'https://github.com/tencentcloud/CubeSandbox' }
@@ -84,6 +85,21 @@ export default withMermaid(defineConfig({
                 { text: 'Networking (CubeVS)', link: '/architecture/network' }
               ]
             }
+          ],
+          '/issues/': [
+            {
+              text: 'Reference Notes',
+              items: [
+                { text: 'Index', link: '/issues/' },
+                { text: '01 Comparison Overview', link: '/issues/01-comparison-overview' },
+                { text: '02 Architecture Comparison', link: '/issues/02-architecture-comparison' },
+                { text: '03 CubeSandbox Deployment', link: '/issues/03-cubesandbox-deployment-guide' },
+                { text: '04 E2B Infra Deployment', link: '/issues/04-e2b-infra-deployment-guide' },
+                { text: '05 Runtime & Performance', link: '/issues/05-runtime-environment-performance' },
+                { text: '06 Selection & Migration', link: '/issues/06-selection-and-migration' },
+                { text: '07 On-Prem & Kubernetes', link: '/issues/07-on-prem-and-kubernetes' }
+              ]
+            }
           ]
         }
       }
@@ -99,6 +115,7 @@ export default withMermaid(defineConfig({
           { text: '首页', link: '/zh/' },
           { text: '指南', link: '/zh/guide/introduction' },
           { text: '架构', link: '/zh/architecture/overview' },
+          { text: '参考', link: '/zh/issues/' },
           { text: '关于我们', link: '/zh/about-us' },
           { text: '更新日志', link: '/zh/changelog' },
           { text: 'GitHub', link: 'https://github.com/tencentcloud/CubeSandbox' }
@@ -160,6 +177,21 @@ export default withMermaid(defineConfig({
               items: [
                 { text: '架构概览 (Overview)', link: '/zh/architecture/overview' },
                 { text: 'CubeVS 网络模型', link: '/zh/architecture/network' }
+              ]
+            }
+          ],
+          '/zh/issues/': [
+            {
+              text: '参考文档',
+              items: [
+                { text: '索引', link: '/zh/issues/' },
+                { text: '01 对比总览', link: '/zh/issues/01-comparison-overview' },
+                { text: '02 架构对比', link: '/zh/issues/02-architecture-comparison' },
+                { text: '03 Cube 部署指南', link: '/zh/issues/03-cubesandbox-deployment-guide' },
+                { text: '04 E2B 部署指南', link: '/zh/issues/04-e2b-infra-deployment-guide' },
+                { text: '05 运行环境与性能', link: '/zh/issues/05-runtime-environment-performance' },
+                { text: '06 选型与迁移', link: '/zh/issues/06-selection-and-migration' },
+                { text: '07 机房与 Kubernetes', link: '/zh/issues/07-on-prem-and-kubernetes' }
               ]
             }
           ]
