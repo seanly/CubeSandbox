@@ -523,7 +523,36 @@ func preHandle(config *Config) (*Config, error) {
 	if preHandleAuthConf(config) != nil {
 		return nil, errors.New("preHandleAuthConf failed")
 	}
+	overrideSecretsFromEnv(config)
 	return config, nil
+}
+
+// overrideSecretsFromEnv overrides database and redis passwords from environment
+// variables when they are set. This prevents hardcoded default passwords from
+// being used in production.
+func overrideSecretsFromEnv(config *Config) {
+	if mysqlPwd := os.Getenv("MYSQL_PASSWORD"); mysqlPwd != "" {
+		if config.OssDBConfig != nil {
+			config.OssDBConfig.Pwd = mysqlPwd
+		}
+		if config.InstanceDBConfig != nil {
+			config.InstanceDBConfig.Pwd = mysqlPwd
+		}
+	}
+	if redisPwd := os.Getenv("REDIS_PASSWORD"); redisPwd != "" {
+		if config.RedisConf != nil {
+			config.RedisConf.Password = redisPwd
+		}
+		if config.RedisReadConf != nil {
+			config.RedisReadConf.Password = redisPwd
+		}
+		if config.RedisWriteConf != nil {
+			config.RedisWriteConf.Password = redisPwd
+		}
+		if config.RedisMetadataConf != nil {
+			config.RedisMetadataConf.Password = redisPwd
+		}
+	}
 }
 func preComHandleConf(config *Config) error {
 	if config == nil {

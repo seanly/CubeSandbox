@@ -80,6 +80,10 @@ async-trait = "0.1"
 clap = { version = "4", features = ["derive"] }
 utoipa = { version = "5.4.0", features = ["chrono", "uuid", "yaml"] }
 
+# ── Observability ─────────────────────────────────────────────────────────
+prometheus = { version = "0.13", features = ["process"] }
+lazy_static = "1.5"
+
 # ── Graceful shutdown ─────────────────────────────────────────────────────
 # (tokio::signal + axum::serve().with_graceful_shutdown is sufficient)
 

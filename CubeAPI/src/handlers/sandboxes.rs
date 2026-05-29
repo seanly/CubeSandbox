@@ -12,6 +12,7 @@ use axum::{
 use crate::{
     error::AppResult,
     logging::{LogEvent, LogLevel},
+    metrics,
     models::{
         ApiError, ConnectSandbox, ListSandboxesQuery, ListSandboxesV2Query, NewSandbox,
         RefreshRequest, ResumedSandbox, Sandbox, SandboxDetail, SandboxLogsQuery,
@@ -171,7 +172,17 @@ pub async fn create_sandbox(
         )
         .await;
 
-    let created = state.services.sandboxes.create_sandbox(body).await?;
+    let created = match state.services.sandboxes.create_sandbox(body).await {
+        Ok(sandbox) => {
+            metrics::SANDBOX_CREATED_TOTAL.inc();
+            metrics::ACTIVE_SANDBOXES.inc();
+            sandbox
+        }
+        Err(err) => {
+            metrics::SANDBOX_CREATE_FAILED_TOTAL.inc();
+            return Err(err);
+        }
+    };
     let sandbox_id = created.sandbox_id.clone();
 
     tracing::info!(sandbox_id = %sandbox_id, template_id = %template_id, "create_sandbox: success");
@@ -215,6 +226,9 @@ pub async fn kill_sandbox(
         .await;
 
     state.services.sandboxes.kill_sandbox(&sandbox_id).await?;
+
+    metrics::SANDBOX_DESTROYED_TOTAL.inc();
+    metrics::ACTIVE_SANDBOXES.dec();
 
     tracing::info!(sandbox_id = %sandbox_id, "kill_sandbox: success");
     state
