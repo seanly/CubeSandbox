@@ -92,6 +92,10 @@ aes-gcm = "0.10"
 # getrandom: OS CSPRNG used to generate the AgentHub master encryption key.
 getrandom = "0.2"
 
+# ── Observability ─────────────────────────────────────────────────────────
+prometheus = { version = "0.13", features = ["process"] }
+lazy_static = "1.5"
+
 # ── Graceful shutdown ─────────────────────────────────────────────────────
 # (tokio::signal + axum::serve().with_graceful_shutdown is sufficient)
 

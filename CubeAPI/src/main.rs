@@ -10,6 +10,7 @@ mod db;
 mod error;
 mod handlers;
 mod logging;
+mod metrics;
 mod middleware;
 mod models;
 mod openapi;

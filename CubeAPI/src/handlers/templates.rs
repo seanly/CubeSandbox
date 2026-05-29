@@ -14,6 +14,7 @@ use serde::Deserialize;
 
 use crate::{
     error::{AppError, AppResult},
+    metrics,
     models::{
         ApiError, CreateTemplateRequest, ListTemplatesQuery, RebuildTemplateRequest,
         TemplateCompatAdoptResponseView, TemplateCompatMatrixView, TemplateDetail, TemplateSummary,
@@ -114,6 +115,7 @@ pub async fn create_template(
     Json(body): Json<CreateTemplateRequest>,
 ) -> AppResult<impl IntoResponse> {
     let job = state.services.templates.create_template(body).await?;
+    metrics::TEMPLATE_CREATED_TOTAL.inc();
     Ok((StatusCode::ACCEPTED, Json(job)))
 }
 

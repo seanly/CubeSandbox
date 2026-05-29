@@ -48,7 +48,7 @@ req_template_conf:
 ossdb_config:
   addr: "127.0.0.1:__CUBE_SANDBOX_MYSQL_PORT__"
   user: "cube"
-  pwd: "cube_pass"
+  pwd: "${MYSQL_PASSWORD:-cube_pass}"
   db_name: "cube_mvp"
   conn_timeout: 5
   read_timeout: 5
@@ -60,7 +60,7 @@ ossdb_config:
 instance_db_config:
   addr: "127.0.0.1:__CUBE_SANDBOX_MYSQL_PORT__"
   user: "cube"
-  pwd: "cube_pass"
+  pwd: "${MYSQL_PASSWORD:-cube_pass}"
   db_name: "cube_mvp"
   conn_timeout: 5
   read_timeout: 5
@@ -71,7 +71,7 @@ instance_db_config:
 
 redis:
   nodes: "127.0.0.1:__CUBE_SANDBOX_REDIS_PORT__"
-  password: "ceuhvu123"
+  password: "${REDIS_PASSWORD:-ceuhvu123}"
   db_no: 0
   max_idle: 8
   max_active: 32
@@ -84,6 +84,24 @@ redis:
   # path, so any TTL below the max sandbox lifetime would break live routing.
   # Teardown removes it via DEL. Only set > max sandbox lifetime if needed.
   sandbox_proxy_ttl_sec: 0
+
+redis_read:
+  nodes: "127.0.0.1:__CUBE_SANDBOX_REDIS_PORT__"
+  password: "${REDIS_PASSWORD:-ceuhvu123}"
+  db_no: 0
+  max_idle: 8
+  max_active: 32
+  idle_timeout: 30
+  max_retry: 2
+
+redis_write:
+  nodes: "127.0.0.1:__CUBE_SANDBOX_REDIS_PORT__"
+  password: "${REDIS_PASSWORD:-ceuhvu123}"
+  db_no: 0
+  max_idle: 8
+  max_active: 32
+  idle_timeout: 30
+  max_retry: 2
 
 scheduler:
   priority_select_num: 1
