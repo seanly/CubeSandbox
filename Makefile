@@ -67,6 +67,25 @@ CUBE_COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
 CUBE_BUILD_TIME ?= $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 export CUBE_VERSION CUBE_COMMIT CUBE_BUILD_TIME
 
+# Mirror / proxy settings for restricted networks (e.g. China mainland).
+# Override these via environment variables or make variables.
+APT_PRIMARY_MIRROR ?= http://mirrors.tencent.com/ubuntu
+APT_SECURITY_MIRROR ?= http://mirrors.tencent.com/ubuntu
+GO_DOWNLOAD_URL ?= https://go.dev/dl/go1.24.8.linux-amd64.tar.gz
+PROTOC_DOWNLOAD_URL ?= https://github.com/protocolbuffers/protobuf/releases/download/v28.3/protoc-28.3-linux-x86_64.zip
+LIBSECCOMP_DOWNLOAD_URL ?= https://github.com/seccomp/libseccomp/releases/download/v2.5.5/libseccomp-2.5.5.tar.gz
+GOPROXY ?= https://proxy.golang.org,direct
+NPM_CONFIG_REGISTRY ?= https://registry.npmjs.org/
+CARGO_REGISTRY_URL ?=
+
+# Convenience defaults for building behind the China firewall.
+CHINA_GO_DOWNLOAD_URL ?= https://mirrors.aliyun.com/golang/go1.24.8.linux-amd64.tar.gz
+CHINA_PROTOC_DOWNLOAD_URL ?= https://proxy.syscube.dev/https://github.com/protocolbuffers/protobuf/releases/download/v28.3/protoc-28.3-linux-x86_64.zip
+CHINA_LIBSECCOMP_DOWNLOAD_URL ?= https://proxy.syscube.dev/https://github.com/seccomp/libseccomp/releases/download/v2.5.5/libseccomp-2.5.5.tar.gz
+CHINA_GOPROXY ?= https://goproxy.cn,https://goproxy.io,direct
+CHINA_NPM_REGISTRY ?= https://registry.npmmirror.com
+CHINA_CARGO_REGISTRY_URL ?=
+
 DOCKER_GIT_CRED =
 ifneq ($(wildcard $(HOME)/.git-credentials),)
 DOCKER_GIT_CRED += -v $(TMP_GIT_CREDENTIALS):$(BUILDER_CONTAINER_HOME)/.git-credentials
@@ -75,10 +94,24 @@ endif
 .PHONY: all
 all: $(BINARIES)
 
+BUILDER_DOCKER_BUILD_ARGS = \
+	--build-arg APT_PRIMARY_MIRROR="$(APT_PRIMARY_MIRROR)" \
+	--build-arg APT_SECURITY_MIRROR="$(APT_SECURITY_MIRROR)" \
+	--build-arg GO_DOWNLOAD_URL="$(GO_DOWNLOAD_URL)" \
+	--build-arg PROTOC_DOWNLOAD_URL="$(PROTOC_DOWNLOAD_URL)" \
+	--build-arg LIBSECCOMP_DOWNLOAD_URL="$(LIBSECCOMP_DOWNLOAD_URL)" \
+	--build-arg GOPROXY="$(GOPROXY)" \
+	--build-arg NPM_CONFIG_REGISTRY="$(NPM_CONFIG_REGISTRY)" \
+	--build-arg CARGO_REGISTRY_URL="$(CARGO_REGISTRY_URL)"
+
+.PHONY: help builder-image builder-image-china pvm-release builder-shell builder-run prepare-builder-home prepare-tmp-git-credentials all cubemaster cubelet cubecow-sdk cubecow-clean cubecow-smoke cubecow-test-native network-agent agent cubeapi shim manual-release web-install web-dev web-build web-preview web-lint web-api-sync web-sync-dev-env
+
 .PHONY: help
 help:
 	@printf "Targets:\n"
 	@printf "  builder-image  Build unified builder image (%s)\n" "$(BUILDER_IMAGE)"
+	@printf "  builder-image-china  Build builder image using China mainland mirrors\n"
+	@printf "  pvm-release          Build PVM release bundle (image + vmlinux-pvm + bundle)\n"
 	@printf "  builder-shell  Start interactive shell with persisted HOME (%s)\n" "$(BUILDER_HOME)"
 	@printf "  builder-run    Run command inside builder image (BUILDER_CMD=...)\n"
 	@printf "  cubemaster    Build cubemaster and cubemastercli in Docker\n"
@@ -111,14 +144,43 @@ help:
 	@printf "  - binary outputs are written to %s\n" "$(OUTPUT_DIR)"
 	@printf "  - release outputs are written to %s\n" "$(RELEASE_DIR)"
 	@printf "  - Run 'make builder-image' first if image %s is missing\n" "$(BUILDER_IMAGE)"
+	@printf "  - Use 'make builder-image-china' for China mainland network\n"
 
 .PHONY: builder-image
 builder-image:
 	@if [ -z "$(BUILDER_FORCE_REBUILD)" ] && docker image inspect $(BUILDER_IMAGE) >/dev/null 2>&1; then \
 		printf 'Builder image %s already present, skipping build (set BUILDER_FORCE_REBUILD=1 to rebuild)\n' "$(BUILDER_IMAGE)"; \
 	else \
-		docker build -t $(BUILDER_IMAGE) -f $(BUILDER_DOCKERFILE) ./docker; \
+		docker build -t $(BUILDER_IMAGE) -f $(BUILDER_DOCKERFILE) $(BUILDER_DOCKER_BUILD_ARGS) ./docker; \
 	fi
+
+builder-image-china:
+	$(MAKE) builder-image \
+		GO_DOWNLOAD_URL="$(CHINA_GO_DOWNLOAD_URL)" \
+		PROTOC_DOWNLOAD_URL="$(CHINA_PROTOC_DOWNLOAD_URL)" \
+		LIBSECCOMP_DOWNLOAD_URL="$(CHINA_LIBSECCOMP_DOWNLOAD_URL)" \
+		GOPROXY="$(CHINA_GOPROXY)" \
+		NPM_CONFIG_REGISTRY="$(CHINA_NPM_REGISTRY)" \
+		CARGO_REGISTRY_URL="$(CHINA_CARGO_REGISTRY_URL)"
+
+pvm-release: builder-image-china
+	@if [ ! -f "$(ROOT_DIR)/deploy/one-click/assets/kernel-artifacts/vmlinux-pvm" ]; then \
+		printf 'Downloading vmlinux-pvm...\n'; \
+		"$(ROOT_DIR)/scripts/download-vmlinux.sh" --only-pvm; \
+	else \
+		printf 'vmlinux-pvm already present\n'; \
+	fi
+	@printf 'Installing PVM kernel as default vmlinux...\n'
+	@cp -f "$(ROOT_DIR)/deploy/one-click/assets/kernel-artifacts/vmlinux-pvm" \
+		"$(ROOT_DIR)/deploy/one-click/assets/kernel-artifacts/vmlinux"
+	@printf 'Building PVM release bundle...\n'
+	GO_DOWNLOAD_URL="$(CHINA_GO_DOWNLOAD_URL)" \
+	PROTOC_DOWNLOAD_URL="$(CHINA_PROTOC_DOWNLOAD_URL)" \
+	LIBSECCOMP_DOWNLOAD_URL="$(CHINA_LIBSECCOMP_DOWNLOAD_URL)" \
+	GOPROXY="$(CHINA_GOPROXY)" \
+	NPM_CONFIG_REGISTRY="$(CHINA_NPM_REGISTRY)" \
+	CARGO_REGISTRY_URL="$(CHINA_CARGO_REGISTRY_URL)" \
+		"$(ROOT_DIR)/deploy/one-click/build-release-bundle-builder.sh"
 
 .PHONY: prepare-builder-home
 prepare-builder-home:
@@ -144,6 +206,8 @@ builder-shell: prepare-builder-home prepare-tmp-git-credentials
 		-e CARGO_HOME=$(BUILDER_CONTAINER_HOME)/.cargo \
 		-e RUSTUP_HOME=/usr/local/rustup \
 		-e GOPATH=$(BUILDER_CONTAINER_HOME)/go \
+		-e GOPROXY="$(GOPROXY)" \
+		-e NPM_CONFIG_REGISTRY="$(NPM_CONFIG_REGISTRY)" \
 		-v "$(ROOT_DIR)":/workspace \
 		-v "$(BUILDER_HOME)":$(BUILDER_CONTAINER_HOME) \
 		$(DOCKER_GIT_CRED) \
@@ -160,6 +224,8 @@ builder-run: prepare-builder-home prepare-tmp-git-credentials
 		-e CARGO_HOME=$(BUILDER_CONTAINER_HOME)/.cargo \
 		-e RUSTUP_HOME=/usr/local/rustup \
 		-e GOPATH=$(BUILDER_CONTAINER_HOME)/go \
+		-e GOPROXY="$(GOPROXY)" \
+		-e NPM_CONFIG_REGISTRY="$(NPM_CONFIG_REGISTRY)" \
 		-e BUILDER_CMD="$(BUILDER_CMD)" \
 		-e CUBE_VERSION \
 		-e CUBE_COMMIT \
