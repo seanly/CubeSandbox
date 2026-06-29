@@ -115,11 +115,15 @@ generate_cubemaster_config_ports() {
   local cfg="${PKG_ROOT}/CubeMaster/conf.yaml"
   local mysql_port="${CUBE_SANDBOX_MYSQL_PORT:-3306}"
   local redis_port="${CUBE_SANDBOX_REDIS_PORT:-6379}"
+  local mysql_password="${CUBE_SANDBOX_MYSQL_PASSWORD:-cube_pass}"
+  local redis_password="${CUBE_SANDBOX_REDIS_PASSWORD:-ceuhvu123}"
 
   ensure_file "${cfg}"
   sed -i \
     -e "s|__CUBE_SANDBOX_MYSQL_PORT__|${mysql_port}|g" \
     -e "s|__CUBE_SANDBOX_REDIS_PORT__|${redis_port}|g" \
+    -e "s|\\\${MYSQL_PASSWORD:-cube_pass}|${mysql_password}|g" \
+    -e "s|\\\${REDIS_PASSWORD:-ceuhvu123}|${redis_password}|g" \
     "${cfg}"
 }
 

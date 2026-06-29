@@ -94,6 +94,7 @@ export default withMermaid(defineConfig({
       themeConfig: {
         nav: [
           { text: 'Home', link: '/' },
+          { text: 'Install', link: '/install/' },
           { text: 'Guide', link: '/guide/introduction' },
           { text: 'Architecture', link: '/architecture/overview' },
           { text: 'Blog', link: '/blog/' },
@@ -103,6 +104,19 @@ export default withMermaid(defineConfig({
         ],
         sidebar: {
           '/blog/': [],
+          '/install/': [
+            {
+              text: '安装',
+              items: [
+                { text: '概览', link: '/install/' },
+                { text: '构建', link: '/install/build' },
+                { text: '打包', link: '/install/package' },
+                { text: '部署', link: '/install/deploy' },
+                { text: 'HTTPS 与域名', link: '/install/https-and-domain' },
+                { text: '架构说明', link: '/install/architecture' }
+              ]
+            }
+          ],
           '/guide/': [
             {
               text: 'Getting Started',
@@ -188,6 +202,7 @@ export default withMermaid(defineConfig({
       themeConfig: {
         nav: [
           { text: '首页', link: '/zh/' },
+          { text: '安装', link: '/install/' },
           { text: '指南', link: '/zh/guide/introduction' },
           { text: '架构', link: '/zh/architecture/overview' },
           { text: '博客', link: '/zh/blog/' },

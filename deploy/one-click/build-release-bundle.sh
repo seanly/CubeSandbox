@@ -192,7 +192,13 @@ build_web_dist() {
     log "building web dashboard"
     require_cmd npm
     ensure_dir "${WEB_SOURCE_DIR}"
-    (cd "${WEB_SOURCE_DIR}" && npm ci && npm run build) >&2
+    (
+      cd "${WEB_SOURCE_DIR}"
+      if [[ -n "${NPM_CONFIG_REGISTRY:-}" ]]; then
+        npm config set registry "${NPM_CONFIG_REGISTRY}"
+      fi
+      npm ci && npm run build
+    ) >&2
     copy_dir_contents "${WEB_SOURCE_DIR}/dist" "${output_dir}"
   fi
 

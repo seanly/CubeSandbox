@@ -72,12 +72,23 @@ chmod 0755 "${HELPER_SCRIPT}"
 
 if ! docker image inspect "${BUILDER_IMAGE_REF}" >/dev/null 2>&1; then
   log "builder image ${BUILDER_IMAGE_REF} missing, building it first"
-  make -C "${ROOT_DIR}" builder-image BUILDER_IMAGE="${BUILDER_IMAGE_REF}" >&2
+  make -C "${ROOT_DIR}" builder-image \
+    BUILDER_IMAGE="${BUILDER_IMAGE_REF}" \
+    GO_DOWNLOAD_URL="${GO_DOWNLOAD_URL:-}" \
+    PROTOC_DOWNLOAD_URL="${PROTOC_DOWNLOAD_URL:-}" \
+    LIBSECCOMP_DOWNLOAD_URL="${LIBSECCOMP_DOWNLOAD_URL:-}" \
+    GOPROXY="${GOPROXY:-}" \
+    NPM_CONFIG_REGISTRY="${NPM_CONFIG_REGISTRY:-}" \
+    CARGO_REGISTRY_URL="${CARGO_REGISTRY_URL:-}" \
+    APT_PRIMARY_MIRROR="${APT_PRIMARY_MIRROR:-}" \
+    APT_SECURITY_MIRROR="${APT_SECURITY_MIRROR:-}" >&2
 fi
 
 log "building one-click component binaries in builder"
 make -C "${ROOT_DIR}" builder-run \
   BUILDER_IMAGE="${BUILDER_IMAGE_REF}" \
+  GOPROXY="${GOPROXY:-}" \
+  NPM_CONFIG_REGISTRY="${NPM_CONFIG_REGISTRY:-}" \
   BUILDER_CMD="bash /workspace/deploy/one-click/.work/build-prebuilt-in-builder.sh" >&2
 
 for artifact in \

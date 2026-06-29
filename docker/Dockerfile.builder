@@ -16,6 +16,16 @@ ARG GITHUB_ACTIONS=false
 ARG RUSTUP_DIST_SERVER=https://rsproxy.cn
 ARG RUSTUP_UPDATE_ROOT=https://rsproxy.cn/rustup
 
+# Download URLs for toolchain binaries. Override these via --build-arg
+# when building behind a firewall or using a regional mirror.
+ARG GO_DOWNLOAD_URL=https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
+ARG PROTOC_DOWNLOAD_URL=https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
+ARG LIBSECCOMP_DOWNLOAD_URL=https://github.com/seccomp/libseccomp/releases/download/v${LIBSECCOMP_VERSION}/libseccomp-${LIBSECCOMP_VERSION}.tar.gz
+
+# Go module proxy and npm registry can be overridden for restricted networks.
+ARG GOPROXY=https://proxy.golang.org,direct
+ARG NPM_CONFIG_REGISTRY=https://registry.npmjs.org/
+
 ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     GOPATH=/go \
@@ -29,7 +39,9 @@ ENV LANG=C.UTF-8 \
     AARCH64_UNKNOWN_LINUX_GNU_OPENSSL_LIB_DIR=/usr/lib/aarch64-linux-gnu \
     AARCH64_UNKNOWN_LINUX_MUSL_OPENSSL_LIB_DIR=/usr/lib/aarch64-linux-gnu \
     LIBSECCOMP_LINK_TYPE=static \
-    LIBSECCOMP_LIB_PATH=/usr/local/lib64/libseccomp/lib
+    LIBSECCOMP_LIB_PATH=/usr/local/lib64/libseccomp/lib \
+    GOPROXY="${GOPROXY}" \
+    NPM_CONFIG_REGISTRY="${NPM_CONFIG_REGISTRY}"
 
 RUN apt-get update -o Acquire::Retries=3 \
     && apt install -y ca-certificates --no-install-recommends
@@ -97,12 +109,12 @@ RUN apt-get update -o Acquire::Retries=3 \
 RUN if [ -x /usr/bin/llvm-strip-14 ] && [ ! -e /usr/local/bin/llvm-strip ]; then ln -s /usr/bin/llvm-strip-14 /usr/local/bin/llvm-strip; fi \
     && if [ ! -e /usr/bin/musl-g++ ]; then ln -s /usr/bin/g++ /usr/bin/musl-g++; fi
 
-RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -o /tmp/go.tgz \
+RUN curl -fsSL "${GO_DOWNLOAD_URL}" -o /tmp/go.tgz \
     && rm -rf /usr/local/go \
     && tar -C /usr/local -xzf /tmp/go.tgz \
     && rm -f /tmp/go.tgz
 
-RUN wget -q "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip" -O /tmp/protoc.zip \
+RUN wget -q "${PROTOC_DOWNLOAD_URL}" -O /tmp/protoc.zip \
     && unzip -q /tmp/protoc.zip -d /tmp/protoc \
     && install -m 0755 /tmp/protoc/bin/protoc /usr/local/bin/protoc \
     && cp -r /tmp/protoc/include/* /usr/local/include/ \
@@ -126,13 +138,19 @@ RUN set -eux; \
     done; \
     rustup default "${RUST_TOOLCHAIN_DEFAULT}"
 
+# Cargo sparse registry mirror for restricted networks.
+ARG CARGO_REGISTRY_URL=
+
 RUN mkdir -p "${CARGO_HOME}" /root/.cargo \
     && printf '[registries.crates-io]\nprotocol = "sparse"\n\n[net]\ngit-fetch-with-cli = true\n' > "${CARGO_HOME}/config.toml" \
+    && if [ -n "${CARGO_REGISTRY_URL}" ]; then \
+        printf '\n[source.crates-io]\nreplace-with = "mirror"\n\n[source.mirror]\nregistry = "%s"\n' "${CARGO_REGISTRY_URL}" >> "${CARGO_HOME}/config.toml"; \
+    fi \
     && ln -sf "${CARGO_HOME}/config.toml" /root/.cargo/config.toml \
     && ln -sf "${CARGO_HOME}/env" /root/.cargo/env
 
 RUN tmp_dir="$(mktemp -d)" \
-    && wget -q "https://github.com/seccomp/libseccomp/releases/download/v${LIBSECCOMP_VERSION}/libseccomp-${LIBSECCOMP_VERSION}.tar.gz" -O "${tmp_dir}/libseccomp.tgz" \
+    && wget -q "${LIBSECCOMP_DOWNLOAD_URL}" -O "${tmp_dir}/libseccomp.tgz" \
     && tar -xzf "${tmp_dir}/libseccomp.tgz" -C "${tmp_dir}" --strip-components=1 \
     && cd "${tmp_dir}" \
     && CC=musl-gcc ./configure --host=x86_64-linux-musl CPPFLAGS="-I/usr/include/x86_64-linux-musl -idirafter /usr/include -idirafter /usr/include/x86_64-linux-gnu" CFLAGS="-O2 -I/usr/include/x86_64-linux-musl -idirafter /usr/include -idirafter /usr/include/x86_64-linux-gnu" --disable-shared --enable-static --prefix=/usr/local/lib64/libseccomp \
