@@ -98,6 +98,15 @@ echo "[one-click] building shim workspace in builder" >&2
 (cd /workspace/CubeShim && cargo build --release --locked)
 install -m 0755 /workspace/CubeShim/target/release/containerd-shim-cube-rs "${PREBUILT_DIR}/containerd-shim-cube-rs"
 install -m 0755 /workspace/CubeShim/target/release/cube-runtime "${PREBUILT_DIR}/cube-runtime"
+
+echo "[one-click] building web dashboard in builder" >&2
+(
+  cd /workspace/web
+  if [[ -n "${NPM_CONFIG_REGISTRY:-}" ]]; then
+    npm config set registry "${NPM_CONFIG_REGISTRY}"
+  fi
+  npm ci && npm run build
+)
 SCRIPT_EOF
 
 chmod 0755 "${HELPER_SCRIPT}"
@@ -149,4 +158,5 @@ ONE_CLICK_CUBEVSMAPDUMP_BIN="${PREBUILT_DIR}/cubevsmapdump" \
 ONE_CLICK_CUBE_AGENT_BIN="${PREBUILT_DIR}/cube-agent" \
 ONE_CLICK_CUBESHIM_BIN="${PREBUILT_DIR}/containerd-shim-cube-rs" \
 ONE_CLICK_CUBE_RUNTIME_BIN="${PREBUILT_DIR}/cube-runtime" \
+ONE_CLICK_WEB_DIST_DIR="${ROOT_DIR}/web/dist" \
   "${SCRIPT_DIR}/build-release-bundle.sh" "$@"

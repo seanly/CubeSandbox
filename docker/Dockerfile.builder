@@ -8,6 +8,7 @@ ARG APT_SECURITY_MIRROR=http://mirrors.tencent.com/ubuntu
 ARG GO_VERSION=1.24.8
 ARG PROTOC_VERSION=28.3
 ARG LIBSECCOMP_VERSION=2.5.5
+ARG NODE_VERSION=22.15.0
 ARG RUST_TOOLCHAIN_DEFAULT=1.89
 ARG RUST_TOOLCHAIN_HYPERVISOR=1.77.2
 ARG RUST_TOOLCHAIN_E2BAPI=1.85
@@ -20,6 +21,7 @@ ARG TARGETARCH
 # Download URLs for toolchain binaries. Override these via --build-arg
 # when building behind a firewall or using a regional mirror.
 ARG GO_DOWNLOAD_URL=https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
+ARG NODE_DOWNLOAD_URL=https://npmmirror.com/mirrors/node/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz
 ARG PROTOC_DOWNLOAD_URL=https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
 ARG LIBSECCOMP_DOWNLOAD_URL=https://github.com/seccomp/libseccomp/releases/download/v${LIBSECCOMP_VERSION}/libseccomp-${LIBSECCOMP_VERSION}.tar.gz
 
@@ -32,7 +34,7 @@ ENV LANG=C.UTF-8 \
     GOPATH=/go \
     RUSTUP_HOME=/usr/local/rustup \
     CARGO_HOME=/usr/local/cargo \
-    PATH=/usr/local/go/bin:/go/bin:/usr/local/cargo/bin:${PATH} \
+    PATH=/usr/local/go/bin:/usr/local/node/bin:/go/bin:/usr/local/cargo/bin:${PATH} \
     CARGO_NET_GIT_FETCH_WITH_CLI=true \
     OPENSSL_INCLUDE_DIR=/usr/include \
     X86_64_UNKNOWN_LINUX_GNU_OPENSSL_LIB_DIR=/usr/lib/x86_64-linux-gnu \
@@ -144,8 +146,15 @@ RUN . /etc/buildenv \
     && tar -C /usr/local -xzf /tmp/go.tgz \
     && rm -f /tmp/go.tgz
 
-RUN . /etc/buildenv \
-    && wget -q "${PROTOC_DOWNLOAD_URL}" -O /tmp/protoc.zip \
+RUN curl -fsSL "${NODE_DOWNLOAD_URL}" -o /tmp/node.tar.xz \
+    && rm -rf /usr/local/node \
+    && mkdir -p /usr/local/node \
+    && tar -C /usr/local/node --strip-components=1 -xf /tmp/node.tar.xz \
+    && rm -f /tmp/node.tar.xz \
+    && node --version \
+    && npm --version
+
+RUN wget -q "${PROTOC_DOWNLOAD_URL}" -O /tmp/protoc.zip \
     && unzip -q /tmp/protoc.zip -d /tmp/protoc \
     && install -m 0755 /tmp/protoc/bin/protoc /usr/local/bin/protoc \
     && cp -r /tmp/protoc/include/* /usr/local/include/ \
