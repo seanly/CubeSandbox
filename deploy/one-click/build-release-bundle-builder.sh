@@ -116,6 +116,7 @@ if ! docker image inspect "${BUILDER_IMAGE_REF}" >/dev/null 2>&1; then
   make -C "${ROOT_DIR}" builder-image \
     BUILDER_IMAGE="${BUILDER_IMAGE_REF}" \
     GO_DOWNLOAD_URL="${GO_DOWNLOAD_URL:-}" \
+    NODE_DOWNLOAD_URL="${NODE_DOWNLOAD_URL:-}" \
     PROTOC_DOWNLOAD_URL="${PROTOC_DOWNLOAD_URL:-}" \
     LIBSECCOMP_DOWNLOAD_URL="${LIBSECCOMP_DOWNLOAD_URL:-}" \
     GOPROXY="${GOPROXY:-}" \

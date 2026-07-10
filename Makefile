@@ -77,6 +77,7 @@ LIBSECCOMP_DOWNLOAD_URL ?= https://github.com/seccomp/libseccomp/releases/downlo
 GOPROXY ?= https://proxy.golang.org,direct
 NPM_CONFIG_REGISTRY ?= https://registry.npmjs.org/
 CARGO_REGISTRY_URL ?=
+NODE_DOWNLOAD_URL ?=
 
 # Convenience defaults for building behind the China firewall.
 CHINA_GO_DOWNLOAD_URL ?= https://mirrors.aliyun.com/golang/go1.24.8.linux-amd64.tar.gz
@@ -98,6 +99,7 @@ BUILDER_DOCKER_BUILD_ARGS = \
 	--build-arg APT_PRIMARY_MIRROR="$(APT_PRIMARY_MIRROR)" \
 	--build-arg APT_SECURITY_MIRROR="$(APT_SECURITY_MIRROR)" \
 	--build-arg GO_DOWNLOAD_URL="$(GO_DOWNLOAD_URL)" \
+	--build-arg NODE_DOWNLOAD_URL="$(NODE_DOWNLOAD_URL)" \
 	--build-arg PROTOC_DOWNLOAD_URL="$(PROTOC_DOWNLOAD_URL)" \
 	--build-arg LIBSECCOMP_DOWNLOAD_URL="$(LIBSECCOMP_DOWNLOAD_URL)" \
 	--build-arg GOPROXY="$(GOPROXY)" \
@@ -175,6 +177,7 @@ pvm-release: builder-image-china
 		"$(ROOT_DIR)/deploy/one-click/assets/kernel-artifacts/vmlinux"
 	@printf 'Building PVM release bundle...\n'
 	GO_DOWNLOAD_URL="$(CHINA_GO_DOWNLOAD_URL)" \
+	NODE_DOWNLOAD_URL="$(NODE_DOWNLOAD_URL)" \
 	PROTOC_DOWNLOAD_URL="$(CHINA_PROTOC_DOWNLOAD_URL)" \
 	LIBSECCOMP_DOWNLOAD_URL="$(CHINA_LIBSECCOMP_DOWNLOAD_URL)" \
 	GOPROXY="$(CHINA_GOPROXY)" \

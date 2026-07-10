@@ -21,7 +21,9 @@ ARG TARGETARCH
 # Download URLs for toolchain binaries. Override these via --build-arg
 # when building behind a firewall or using a regional mirror.
 ARG GO_DOWNLOAD_URL=https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
-ARG NODE_DOWNLOAD_URL=https://npmmirror.com/mirrors/node/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz
+# Node.js binary mirror. Defaults to npmmirror.com with architecture mapped
+# from TARGETARCH (amd64 -> x64, arm64 -> arm64). Override via --build-arg.
+ARG NODE_DOWNLOAD_URL=
 ARG PROTOC_DOWNLOAD_URL=https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
 ARG LIBSECCOMP_DOWNLOAD_URL=https://github.com/seccomp/libseccomp/releases/download/v${LIBSECCOMP_VERSION}/libseccomp-${LIBSECCOMP_VERSION}.tar.gz
 
@@ -146,7 +148,11 @@ RUN . /etc/buildenv \
     && tar -C /usr/local -xzf /tmp/go.tgz \
     && rm -f /tmp/go.tgz
 
-RUN curl -fsSL "${NODE_DOWNLOAD_URL}" -o /tmp/node.tar.xz \
+RUN set -eux; \
+    . /etc/buildenv; \
+    node_arch=$(case "${TARGETARCH}" in amd64) echo x64;; arm64) echo arm64;; *) echo "${TARGETARCH}";; esac); \
+    node_url="${NODE_DOWNLOAD_URL:-https://npmmirror.com/mirrors/node/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${node_arch}.tar.xz}"; \
+    curl -fsSL "${node_url}" -o /tmp/node.tar.xz \
     && rm -rf /usr/local/node \
     && mkdir -p /usr/local/node \
     && tar -C /usr/local/node --strip-components=1 -xf /tmp/node.tar.xz \
