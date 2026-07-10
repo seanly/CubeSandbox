@@ -25,6 +25,7 @@ const RET_CODE_HTTP_OK: i32 = 200;
 const RET_CODE_NOT_FOUND: i32 = 130404;
 const RET_CODE_CONFLICT: i32 = 130409;
 const HOSTDIR_MOUNT_KEY: &str = "host-mount";
+const X_MOUNTS_KEY: &str = "x-mounts";
 
 #[derive(Clone)]
 pub struct SandboxService {
@@ -128,6 +129,9 @@ impl SandboxService {
         let labels = body.metadata.map(|mut meta| {
             if let Some(value) = meta.remove(HOSTDIR_MOUNT_KEY) {
                 annotations.insert(HOSTDIR_MOUNT_KEY.to_string(), value);
+            }
+            if let Some(value) = meta.remove(X_MOUNTS_KEY) {
+                annotations.insert(X_MOUNTS_KEY.to_string(), value);
             }
             meta
         });

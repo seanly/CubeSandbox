@@ -1,0 +1,25 @@
+{
+  "title": "Tools",
+  "subtitle": "Application-level sandbox templates with default mounts and runtime configuration.",
+  "create": {
+    "button": "New Tool",
+    "title": "Create Tool",
+    "toolID": "Tool ID",
+    "name": "Name",
+    "templateID": "Template ID",
+    "instanceType": "Instance Type",
+    "networkType": "Network Type",
+    "storageMount": "Default Storage Mount (HostDir)",
+    "mountName": "Mount name",
+    "mountPath": "Container mount path",
+    "hostPath": "Host path",
+    "submit": "Create",
+    "creating": "Creating...",
+    "cancel": "Cancel",
+    "error": "Failed to create tool"
+  },
+  "template": "Template",
+  "delete": "Delete Tool",
+  "loadError": "Failed to load tools",
+  "empty": "No tools yet. Create one to get started."
+}

@@ -14,6 +14,9 @@ export type SandboxResumeRequest = components['schemas']['ResumedSandbox'];
 export type TemplateSummaryDto = components['schemas']['TemplateSummary'];
 export type TemplateDetailDto = components['schemas']['TemplateDetail'];
 export type ApiNodeView = components['schemas']['NodeView'];
+export type ToolSummaryDto = components['schemas']['ToolSummary'];
+export type ToolDetailDto = components['schemas']['ToolDetail'];
+export type CreateToolRequestDto = components['schemas']['CreateToolRequest'];
 
 export interface RunningSandbox extends ListedSandboxDto {}
 
@@ -181,6 +184,76 @@ export const templateApi = {
   getBuildLogs: (id: string, buildID: string) =>
     api<{ lines?: string[]; status?: string; progress?: number }>(`/templates/${id}/builds/${buildID}/logs`),
   remove: (id: string) => api<void>(`/templates/${id}`, { method: 'DELETE' }),
+};
+
+export interface ToolStorageMount {
+  name: string;
+  mountPath: string;
+  readOnly?: boolean | null;
+  subPath?: string | null;
+  storageSource: {
+    hostDir?: { hostPath: string } | null;
+  };
+}
+
+export interface ToolSummary {
+  toolID: string;
+  name?: string | null;
+  templateID: string;
+  instanceType?: string | null;
+  networkType?: string | null;
+}
+
+export interface ToolDetail extends ToolSummary {
+  runtimeHandler?: string | null;
+  defaultTimeout?: number | null;
+  storageMounts: ToolStorageMount[];
+  labels?: Record<string, string> | null;
+  annotations?: Record<string, string> | null;
+}
+
+function mapToolSummary(dto: ToolSummaryDto): ToolSummary {
+  return {
+    toolID: dto.tool_id,
+    name: dto.name,
+    templateID: dto.template_id,
+    instanceType: dto.instance_type,
+    networkType: dto.network_type,
+  };
+}
+
+function mapToolDetail(dto: ToolDetailDto): ToolDetail {
+  return {
+    toolID: dto.tool_id,
+    name: dto.name,
+    templateID: dto.template_id,
+    instanceType: dto.instance_type,
+    networkType: dto.network_type,
+    runtimeHandler: dto.runtime_handler,
+    defaultTimeout: dto.default_timeout,
+    storageMounts: (dto.storage_mounts ?? []).map((m) => ({
+      name: m.name,
+      mountPath: m.mount_path,
+      readOnly: m.read_only,
+      subPath: m.sub_path,
+      storageSource: {
+        hostDir: m.storage_source?.host_dir
+          ? { hostPath: m.storage_source.host_dir.host_path }
+          : undefined,
+      },
+    })),
+    labels: dto.labels ?? undefined,
+    annotations: dto.annotations ?? undefined,
+  };
+}
+
+export const toolApi = {
+  list: () => api<ToolSummaryDto[]>('/tools').then((items) => items.map(mapToolSummary)),
+  get: (id: string) => api<ToolDetailDto>(`/tools/${id}`).then(mapToolDetail),
+  create: (body: CreateToolRequestDto) => api<ToolDetailDto>('/tools', { method: 'POST', body: JSON.stringify(body) }).then(mapToolDetail),
+  update: (id: string, body: CreateToolRequestDto) =>
+    api<ToolDetailDto>(`/tools/${id}`, { method: 'PATCH', body: JSON.stringify(body) }).then(mapToolDetail),
+  remove: (id: string) => api<void>(`/tools/${id}`, { method: 'DELETE' }),
 };
 
 export const clusterApi = {

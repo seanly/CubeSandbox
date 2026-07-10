@@ -20,6 +20,7 @@ import (
 	"github.com/tencentcloud/CubeSandbox/CubeMaster/pkg/base/utils"
 	"github.com/tencentcloud/CubeSandbox/CubeMaster/pkg/service/sandbox/types"
 	"github.com/tencentcloud/CubeSandbox/CubeMaster/pkg/templatecenter"
+	"github.com/tencentcloud/CubeSandbox/CubeMaster/pkg/tools"
 )
 
 var (
@@ -331,6 +332,16 @@ func dealCubeboxCreateReqWithTemplate(ctx context.Context, reqInOut *types.Creat
 
 	templateID, hasTemplateID := reqInOut.Annotations[constants.CubeAnnotationAppSnapshotTemplateID]
 
+	// Try to resolve the caller-supplied template ID as an application-level Tool first.
+	// If it is a Tool, we inherit its default configuration and then use Tool.TemplateID
+	// as the underlying CubeSandbox template for the rest of the flow.
+	if hasTemplateID && templateID != "" {
+		if err := tryResolveAndApplyTool(ctx, templateID, reqInOut); err != nil {
+			return err
+		}
+		templateID = reqInOut.Annotations[constants.CubeAnnotationAppSnapshotTemplateID]
+	}
+
 	if !hasTemplateID && config.GetConfig().Common.EnableAGSColdStartSwitch {
 		return handleColdStartCompatibility(reqInOut)
 	}
@@ -340,6 +351,69 @@ func dealCubeboxCreateReqWithTemplate(ctx context.Context, reqInOut *types.Creat
 	}
 
 	return dealCubeboxReqTemplateByLocalConfig(ctx, reqInOut)
+}
+
+// tryResolveAndApplyTool attempts to load templateID as a Tool. If successful,
+// it merges Tool defaults into reqInOut and replaces the template annotation
+// with Tool.TemplateID. If no Tool exists, the request is left unchanged so
+// that templateID can still be interpreted as a legacy CubeSandbox template.
+func tryResolveAndApplyTool(ctx context.Context, templateID string, reqInOut *types.CreateCubeSandboxReq) error {
+	tool, err := tools.GetTool(ctx, templateID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil
+		}
+		return fmt.Errorf("failed to resolve tool %q: %w", templateID, err)
+	}
+
+	reqInOut.ToolID = tool.ToolID
+
+	// Merge Tool defaults (request values take precedence).
+	if tool.TemplateID != "" {
+		reqInOut.Annotations[constants.CubeAnnotationAppSnapshotTemplateID] = tool.TemplateID
+	}
+	if reqInOut.InstanceType == "" && tool.InstanceType != "" {
+		reqInOut.InstanceType = tool.InstanceType
+	}
+	if reqInOut.NetworkType == "" && tool.NetworkType != "" {
+		reqInOut.NetworkType = tool.NetworkType
+	}
+	if reqInOut.RuntimeHandler == "" && tool.RuntimeHandler != "" {
+		reqInOut.RuntimeHandler = tool.RuntimeHandler
+	}
+	if reqInOut.Timeout <= 0 && tool.DefaultTimeout > 0 {
+		reqInOut.Timeout = tool.DefaultTimeout
+	}
+	if len(tool.Labels) > 0 {
+		if reqInOut.Labels == nil {
+			reqInOut.Labels = map[string]string{}
+		}
+		for k, v := range tool.Labels {
+			if _, exists := reqInOut.Labels[k]; !exists {
+				reqInOut.Labels[k] = v
+			}
+		}
+	}
+	if len(tool.Annotations) > 0 {
+		if reqInOut.Annotations == nil {
+			reqInOut.Annotations = map[string]string{}
+		}
+		for k, v := range tool.Annotations {
+			if _, exists := reqInOut.Annotations[k]; !exists {
+				reqInOut.Annotations[k] = v
+			}
+		}
+	}
+
+	// Merge StorageMounts with instance-level MountOptions.
+	if len(tool.StorageMounts) > 0 || len(reqInOut.MountOptions) > 0 {
+		if err := tools.ApplyToolMounts(tool, reqInOut); err != nil {
+			return fmt.Errorf("apply tool %q mounts: %w", tool.ToolID, err)
+		}
+	}
+
+	log.G(ctx).Infof("resolved request template %q as tool %q (underlying template %q)", templateID, tool.ToolID, tool.TemplateID)
+	return nil
 }
 
 func handleColdStartCompatibility(reqInOut *types.CreateCubeSandboxReq) error {

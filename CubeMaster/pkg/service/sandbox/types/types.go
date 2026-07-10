@@ -44,14 +44,30 @@ type CreateCubeSandboxReq struct {
 
 	Containers []*Container `json:"containers,omitempty"`
 
-	Annotations       map[string]string `json:"annotations,omitempty" `
-	Labels            map[string]string `json:"labels,omitempty" `
-	DistributionScope []string          `json:"distribution_scope,omitempty"`
-	InstanceType      string            `json:"instance_type,omitempty"`
-	NetworkType       string            `json:"network_type,omitempty"`
+	Annotations       map[string]string  `json:"annotations,omitempty" `
+	Labels            map[string]string  `json:"labels,omitempty" `
+	DistributionScope []string           `json:"distribution_scope,omitempty"`
+	InstanceType      string             `json:"instance_type,omitempty"`
+	NetworkType       string             `json:"network_type,omitempty"`
 
 	RuntimeHandler string `json:"runtime_handler,omitempty"`
 	Namespace      string `json:"namespace,omitempty"`
+
+	// ToolID is set when the request template resolves to a Tool.
+	ToolID string `json:"tool_id,omitempty"`
+	// MountOptions are parsed from metadata["x-mounts"] and merged with
+	// the Tool's StorageMounts before the request is sent to Cubelet.
+	MountOptions []*MountOption `json:"-"`
+}
+
+// MountOption is an instance-level override passed in metadata["x-mounts"].
+type MountOption struct {
+	Name      string `json:"name,omitempty"`
+	MountPath string `json:"mountPath,omitempty"`
+	// ReadOnly is a pointer so that "not set" and "set to false" can be
+	// distinguished. When nil the Tool default is used.
+	ReadOnly *bool `json:"readOnly,omitempty"`
+	SubPath  string `json:"subPath,omitempty"`
 }
 
 func (r *CreateCubeSandboxReq) UnmarshalJSON(data []byte) error {

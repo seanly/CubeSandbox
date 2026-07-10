@@ -6,6 +6,7 @@ pub mod cluster;
 pub mod sandboxes;
 pub mod snapshots;
 pub mod templates;
+pub mod tools;
 
 use crate::{config::ServerConfig, cubemaster::CubeMasterClient};
 
@@ -15,6 +16,7 @@ pub struct AppServices {
     pub sandboxes: sandboxes::SandboxService,
     pub snapshots: snapshots::SnapshotService,
     pub templates: templates::TemplateService,
+    pub tools: tools::ToolService,
 }
 
 impl AppServices {
@@ -30,7 +32,8 @@ impl AppServices {
                 cubemaster.clone(),
                 config.instance_type.clone(),
             ),
-            templates: templates::TemplateService::new(cubemaster, config.instance_type.clone()),
+            templates: templates::TemplateService::new(cubemaster.clone(), config.instance_type.clone()),
+            tools: tools::ToolService::new(cubemaster),
         }
     }
 }

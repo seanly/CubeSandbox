@@ -12,9 +12,10 @@ use utoipa::{
 use crate::{
     handlers,
     models::{
-        ApiError, ClusterOverview, NodeConditionView, NodeResourcesView, NodeView, ResumedSandbox,
-        Sandbox, SandboxDetail, SandboxLogEntry, SandboxLogsV2Response, SandboxState,
-        SandboxVolumeMount, TemplateDetail, TemplateSummary,
+        ApiError, ClusterOverview, CreateToolRequest, NodeConditionView, NodeResourcesView,
+        NodeView, ResumedSandbox, Sandbox, SandboxDetail, SandboxLogEntry, SandboxLogsV2Response,
+        SandboxState, SandboxVolumeMount, TemplateDetail, TemplateSummary, ToolDetail, ToolStorageMount,
+        ToolStorageSource, ToolHostDirStorageSource, ToolSummary,
     },
 };
 
@@ -53,6 +54,11 @@ impl Modify for SecurityAddon {
         handlers::cluster::get_node,
         handlers::templates::list_templates,
         handlers::templates::get_template,
+        handlers::tools::list_tools,
+        handlers::tools::get_tool,
+        handlers::tools::create_tool,
+        handlers::tools::update_tool,
+        handlers::tools::delete_tool,
         handlers::sandboxes::list_sandboxes_v2,
         handlers::sandboxes::get_sandbox,
         handlers::sandboxes::kill_sandbox,
@@ -69,6 +75,12 @@ impl Modify for SecurityAddon {
         NodeView,
         TemplateSummary,
         TemplateDetail,
+        ToolSummary,
+        ToolDetail,
+        CreateToolRequest,
+        ToolStorageMount,
+        ToolStorageSource,
+        ToolHostDirStorageSource,
         SandboxState,
         SandboxVolumeMount,
         crate::models::ListedSandbox,
@@ -86,6 +98,7 @@ impl Modify for SecurityAddon {
         (name = "health", description = "Health and liveness"),
         (name = "cluster", description = "Cluster and node inventory"),
         (name = "templates", description = "Template catalog"),
+        (name = "tools", description = "Tool catalog"),
         (name = "sandboxes", description = "Sandbox lifecycle and logs")
     )
 )]

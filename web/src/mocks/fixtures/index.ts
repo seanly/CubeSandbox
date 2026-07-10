@@ -128,6 +128,9 @@ function buildNodes(): NodeDto[] {
       cpuSaturation: 70.3,
       memorySaturation: 67.3,
       maxMvmSlots: 32,
+      createConcurrentNum: 100,
+      quotaCpu: 64,
+      quotaMemMB: 131_072,
       heartbeatTime: ago(12),
       conditions: [
         { type: 'Ready', status: 'True', lastHeartbeatTime: ago(12) },
@@ -145,6 +148,9 @@ function buildNodes(): NodeDto[] {
       cpuSaturation: 54.2,
       memorySaturation: 44.0,
       maxMvmSlots: 24,
+      createConcurrentNum: 100,
+      quotaCpu: 48,
+      quotaMemMB: 98_304,
       heartbeatTime: ago(9),
       conditions: [{ type: 'Ready', status: 'True', lastHeartbeatTime: ago(9) }],
       localTemplates: ['nodejs-20-web', 'go-1.22', 'ubuntu-24.04'],
@@ -159,6 +165,9 @@ function buildNodes(): NodeDto[] {
       cpuSaturation: 90.6,
       memorySaturation: 93.7,
       maxMvmSlots: 16,
+      createConcurrentNum: 100,
+      quotaCpu: 32,
+      quotaMemMB: 65_536,
       heartbeatTime: ago(48),
       conditions: [
         {

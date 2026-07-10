@@ -36,6 +36,7 @@ const (
 	TemplateFromImageAction        = "/template/from-image"
 	TemplateArtifactDownloadAction = "/template/artifact/download"
 	RootfsArtifactAction           = "/rootfs-artifact"
+	ToolAction                     = "/tool"
 	ListInventoryAction            = "/listinventory"
 	SandboxLogsAction              = "/sandbox/logs"
 )
@@ -94,6 +95,8 @@ func HttpHandler(w http.ResponseWriter, r *http.Request) {
 		rsp = handleTemplateArtifactDownloadAction(w, r, rt)
 	case r.URL.Path == actionURI(RootfsArtifactAction):
 		rsp = handleRootfsArtifactAction(w, r, rt)
+	case strings.HasPrefix(r.URL.Path, actionURI(ToolAction)):
+		rsp = handleToolAction(w, r, rt)
 	case r.URL.Path == actionURI(ListInventoryAction):
 		rsp = handleListInventoryAction(w, r, rt)
 	default:

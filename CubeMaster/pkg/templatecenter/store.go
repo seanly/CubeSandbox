@@ -29,6 +29,7 @@ import (
 	"github.com/tencentcloud/CubeSandbox/CubeMaster/pkg/service/sandbox"
 	sandboxtypes "github.com/tencentcloud/CubeSandbox/CubeMaster/pkg/service/sandbox/types"
 	"github.com/tencentcloud/CubeSandbox/CubeMaster/pkg/task"
+	"github.com/tencentcloud/CubeSandbox/CubeMaster/pkg/tools"
 	"gorm.io/gorm"
 )
 
@@ -228,6 +229,9 @@ func Init(ctx context.Context) error {
 			return
 		}
 		if initErr = sandboxspec.Init(store.db); initErr != nil {
+			return
+		}
+		if initErr = tools.Init(store.db); initErr != nil {
 			return
 		}
 		configureSnapshotRuntimeRefHooks()

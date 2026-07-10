@@ -427,6 +427,82 @@ impl CubeMasterClient {
         parse_response(resp).await
     }
 
+    // ── Tool APIs ───────────────────────────────────────────────────────────
+    // Maps to CubeMaster `/cube/tool`.
+
+    /// POST /cube/tool — create a tool.
+    pub async fn create_tool(
+        &self,
+        req: &CreateToolRequest,
+    ) -> Result<ToolResponse, CubeMasterError> {
+        let url = format!("{}/cube/tool", self.base_url);
+        let resp = self
+            .inner
+            .post(&url)
+            .json(req)
+            .send()
+            .await
+            .map_err(CubeMasterError::Http)?;
+        parse_response(resp).await
+    }
+
+    /// GET /cube/tool — list tools.
+    pub async fn list_tools(&self) -> Result<ToolListResponse, CubeMasterError> {
+        let url = format!("{}/cube/tool", self.base_url);
+        let resp = self
+            .inner
+            .get(&url)
+            .send()
+            .await
+            .map_err(CubeMasterError::Http)?;
+        parse_response(resp).await
+    }
+
+    /// GET /cube/tool/{tool_id} — get a single tool.
+    pub async fn get_tool(&self, tool_id: &str) -> Result<ToolResponse, CubeMasterError> {
+        validate_path_segment("tool_id", tool_id)?;
+        let url = format!("{}/cube/tool/{}", self.base_url, tool_id);
+        let resp = self
+            .inner
+            .get(&url)
+            .send()
+            .await
+            .map_err(CubeMasterError::Http)?;
+        parse_response(resp).await
+    }
+
+    /// PUT /cube/tool — update a tool.
+    pub async fn update_tool(
+        &self,
+        req: &CreateToolRequest,
+    ) -> Result<ToolResponse, CubeMasterError> {
+        let url = format!("{}/cube/tool", self.base_url);
+        let resp = self
+            .inner
+            .put(&url)
+            .json(req)
+            .send()
+            .await
+            .map_err(CubeMasterError::Http)?;
+        parse_response(resp).await
+    }
+
+    /// DELETE /cube/tool — delete a tool.
+    pub async fn delete_tool(
+        &self,
+        req: &ToolDeleteRequest,
+    ) -> Result<ToolDeleteResponse, CubeMasterError> {
+        let url = format!("{}/cube/tool", self.base_url);
+        let resp = self
+            .inner
+            .delete(&url)
+            .json(req)
+            .send()
+            .await
+            .map_err(CubeMasterError::Http)?;
+        parse_response(resp).await
+    }
+
     // ── Node / Cluster APIs ──────────────────────────────────────────────
 
     /// GET /internal/meta/nodes — list all nodes (capacity + health).
@@ -1780,6 +1856,100 @@ pub struct NodeResponse {
     pub ret: RetCode,
     #[serde(default)]
     pub data: Option<NodeSnapshot>,
+}
+
+// ─── Tool ────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateToolRequest {
+    #[serde(rename = "RequestID", alias = "requestID", skip_serializing_if = "String::is_empty")]
+    pub request_id: String,
+    pub tool: Tool,
+}
+
+#[derive(Debug, Serialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolDeleteRequest {
+    #[serde(rename = "RequestID", alias = "requestID", skip_serializing_if = "String::is_empty")]
+    pub request_id: String,
+    pub tool_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolResponse {
+    #[serde(default, rename = "RequestID", alias = "requestID")]
+    pub request_id: String,
+    #[serde(default)]
+    pub tool: Option<Tool>,
+    pub ret: RetCode,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolListResponse {
+    #[serde(default, rename = "RequestID", alias = "requestID")]
+    pub request_id: String,
+    #[serde(default)]
+    pub data: Vec<Tool>,
+    pub ret: RetCode,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ToolDeleteResponse {
+    #[serde(default, rename = "RequestID", alias = "requestID")]
+    pub request_id: String,
+    pub ret: RetCode,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Tool {
+    pub tool_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    pub template_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub instance_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub network_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub runtime_handler: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_timeout: Option<i32>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub storage_mounts: Vec<StorageMount>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub labels: Option<HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotations: Option<HashMap<String, String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageMount {
+    pub name: String,
+    pub mount_path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub read_only: Option<bool>,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub sub_path: String,
+    pub storage_source: StorageSource,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageSource {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub host_dir: Option<HostDirStorageSource>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct HostDirStorageSource {
+    pub host_path: String,
 }
 
 #[cfg(test)]

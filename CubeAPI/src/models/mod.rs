@@ -65,6 +65,88 @@ pub struct SandboxVolumeMount {
     pub path: String,
 }
 
+// ─── Tool ────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ToolSummary {
+    pub tool_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    pub template_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub instance_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub network_type: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ToolDetail {
+    pub tool_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    pub template_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub instance_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub network_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub runtime_handler: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_timeout: Option<i32>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub storage_mounts: Vec<ToolStorageMount>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub labels: Option<HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotations: Option<HashMap<String, String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct CreateToolRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub template_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub instance_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub network_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub runtime_handler: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_timeout: Option<i32>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub storage_mounts: Vec<ToolStorageMount>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub labels: Option<HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotations: Option<HashMap<String, String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ToolStorageMount {
+    pub name: String,
+    pub mount_path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub read_only: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sub_path: Option<String>,
+    pub storage_source: ToolStorageSource,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ToolStorageSource {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub host_dir: Option<ToolHostDirStorageSource>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ToolHostDirStorageSource {
+    pub host_path: String,
+}
+
 // ─── Sandbox — create request ──────────────────────────────────────────────
 
 /// Request body for POST /sandboxes

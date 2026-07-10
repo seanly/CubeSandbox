@@ -18,7 +18,7 @@ use tower_http::{
 };
 
 use crate::{
-    handlers::{cluster, config, health, sandboxes, snapshots, store, templates},
+    handlers::{cluster, config, health, sandboxes, snapshots, store, templates, tools},
     middleware::{auth::unified_auth, rate_limit::rate_limit},
     state::AppState,
 };
@@ -70,14 +70,16 @@ fn build_e2b_router(state: &AppState, auth_configured: bool) -> Router<AppState>
         .route("/health", get(health::health))
         .merge(build_sandbox_routes(state, auth_configured))
         .merge(build_template_routes(state, auth_configured))
+        .merge(build_tool_routes(state, auth_configured))
 }
 
 /// Routes that need the longer 240 s timeout when surfaced under the e2b
-/// (root) prefix.  Currently snapshot create + template/snapshot delete.
+/// (root) prefix.  Currently snapshot create + template/snapshot delete + tool delete.
 fn build_e2b_snapshot_long_router(state: &AppState, auth_configured: bool) -> Router<AppState> {
     Router::new()
         .merge(build_long_sandbox_routes(state, auth_configured))
         .merge(build_long_template_routes(state, auth_configured))
+        .merge(build_long_tool_routes(state, auth_configured))
 }
 
 fn build_cubeapi_router(state: &AppState, auth_configured: bool) -> Router<AppState> {
@@ -85,6 +87,7 @@ fn build_cubeapi_router(state: &AppState, auth_configured: bool) -> Router<AppSt
         .route("/health", get(health::health))
         .merge(build_sandbox_routes(state, auth_configured))
         .merge(build_template_routes(state, auth_configured))
+        .merge(build_tool_routes(state, auth_configured))
         .merge(build_cluster_routes(state, auth_configured))
 }
 
@@ -96,6 +99,7 @@ fn build_cubeapi_snapshot_long_router(
     Router::new()
         .merge(build_long_sandbox_routes(state, auth_configured))
         .merge(build_long_template_routes(state, auth_configured))
+        .merge(build_long_tool_routes(state, auth_configured))
 }
 
 fn build_sandbox_routes(state: &AppState, auth_configured: bool) -> Router<AppState> {
@@ -199,6 +203,22 @@ fn build_long_template_routes(state: &AppState, auth_configured: bool) -> Router
         "/templates/:templateID",
         delete(templates::delete_template),
     );
+
+    with_auth(routes, state, auth_configured)
+}
+
+fn build_tool_routes(state: &AppState, auth_configured: bool) -> Router<AppState> {
+    let routes = Router::new()
+        .route("/tools", get(tools::list_tools))
+        .route("/tools", post(tools::create_tool))
+        .route("/tools/:toolID", get(tools::get_tool))
+        .route("/tools/:toolID", patch(tools::update_tool));
+
+    with_auth(routes, state, auth_configured)
+}
+
+fn build_long_tool_routes(state: &AppState, auth_configured: bool) -> Router<AppState> {
+    let routes = Router::new().route("/tools/:toolID", delete(tools::delete_tool));
 
     with_auth(routes, state, auth_configured)
 }

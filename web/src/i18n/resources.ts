@@ -10,6 +10,8 @@ import enSandboxes from '@/locales/en/sandboxes.json';
 import enSandboxDetail from '@/locales/en/sandboxDetail.json';
 import enTemplates from '@/locales/en/templates.json';
 import enTemplateDetail from '@/locales/en/templateDetail.json';
+import enTools from '@/locales/en/tools.json';
+import enToolDetail from '@/locales/en/toolDetail.json';
 import enNodes from '@/locales/en/nodes.json';
 import enNodeDetail from '@/locales/en/nodeDetail.json';
 import enNetwork from '@/locales/en/network.json';
@@ -30,6 +32,8 @@ import zhSandboxes from '@/locales/zh/sandboxes.json';
 import zhSandboxDetail from '@/locales/zh/sandboxDetail.json';
 import zhTemplates from '@/locales/zh/templates.json';
 import zhTemplateDetail from '@/locales/zh/templateDetail.json';
+import zhTools from '@/locales/zh/tools.json';
+import zhToolDetail from '@/locales/zh/toolDetail.json';
 import zhNodes from '@/locales/zh/nodes.json';
 import zhNodeDetail from '@/locales/zh/nodeDetail.json';
 import zhNetwork from '@/locales/zh/network.json';
@@ -52,6 +56,8 @@ export const resources = {
     sandboxDetail: enSandboxDetail,
     templates: enTemplates,
     templateDetail: enTemplateDetail,
+    tools: enTools,
+    toolDetail: enToolDetail,
     nodes: enNodes,
     nodeDetail: enNodeDetail,
     network: enNetwork,
@@ -73,6 +79,8 @@ export const resources = {
     sandboxDetail: zhSandboxDetail,
     templates: zhTemplates,
     templateDetail: zhTemplateDetail,
+    tools: zhTools,
+    toolDetail: zhToolDetail,
     nodes: zhNodes,
     nodeDetail: zhNodeDetail,
     network: zhNetwork,

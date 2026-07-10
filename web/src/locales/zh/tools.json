@@ -1,0 +1,25 @@
+{
+  "title": "工具",
+  "subtitle": "应用级沙箱模板，定义默认挂载和运行时配置。",
+  "create": {
+    "button": "新建工具",
+    "title": "创建工具",
+    "toolID": "工具 ID",
+    "name": "名称",
+    "templateID": "模板 ID",
+    "instanceType": "实例类型",
+    "networkType": "网络类型",
+    "storageMount": "默认存储挂载（HostDir）",
+    "mountName": "挂载名称",
+    "mountPath": "容器挂载路径",
+    "hostPath": "宿主机路径",
+    "submit": "创建",
+    "creating": "创建中...",
+    "cancel": "取消",
+    "error": "创建工具失败"
+  },
+  "template": "模板",
+  "delete": "删除工具",
+  "loadError": "加载工具失败",
+  "empty": "暂无工具，创建一个开始。"
+}

@@ -7,6 +7,7 @@ package cube
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/tencentcloud/CubeSandbox/CubeMaster/pkg/service/sandbox"
 	"github.com/tencentcloud/CubeSandbox/CubeMaster/pkg/service/sandbox/types"
 	"github.com/tencentcloud/CubeSandbox/CubeMaster/pkg/templatecenter"
+	"github.com/tencentcloud/CubeSandbox/CubeMaster/pkg/tools"
 	"github.com/tencentcloud/CubeSandbox/cubelog"
 )
 
@@ -150,6 +152,15 @@ func constructCreateReq(r *http.Request) (*types.CreateCubeSandboxReq, error) {
 	if req.Namespace == "" {
 		req.Namespace = "default"
 	}
+
+	if raw, ok := req.Annotations[tools.AnnotationXMounts]; ok && raw != "" {
+		opts, err := tools.ParseMountOptions(raw)
+		if err != nil {
+			return nil, fmt.Errorf("invalid %s annotation: %w", tools.AnnotationXMounts, err)
+		}
+		req.MountOptions = opts
+	}
+
 	return req, nil
 }
 

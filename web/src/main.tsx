@@ -15,6 +15,8 @@ import SandboxesPage from '@/pages/Sandboxes';
 import SandboxDetailPage from '@/pages/SandboxDetail';
 import SandboxNewPage from '@/pages/SandboxNew';
 import TemplatesPage from '@/pages/Templates';
+import ToolsPage from '@/pages/Tools';
+import ToolDetailPage from '@/pages/ToolDetail';
 import NodesPage from '@/pages/Nodes';
 import KeysPage from '@/pages/Keys';
 import SettingsPage from '@/pages/Settings';
@@ -52,6 +54,8 @@ const App = () => (
                 path="/templates/:templateID"
                 element={<TemplateDetailPage />}
               />
+              <Route path="/tools" element={<ToolsPage />} />
+              <Route path="/tools/:toolID" element={<ToolDetailPage />} />
               <Route path="/nodes" element={<NodesPage />} />
               <Route path="/nodes/:nodeID" element={<NodeDetailPage />} />
               <Route path="/network" element={<NetworkPage />} />

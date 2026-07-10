@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Boxes,
   Package,
+  Wrench,
   Server,
   LayoutDashboard,
   Activity,
@@ -54,6 +55,7 @@ export function CommandPalette() {
               <Item icon={<LayoutDashboard size={14} />} label={tNav('overview')} onSelect={() => go('/')} />
               <Item icon={<Boxes size={14} />} label={tNav('sandboxes')} onSelect={() => go('/sandboxes')} />
               <Item icon={<Package size={14} />} label={tNav('templates')} onSelect={() => go('/templates')} />
+              <Item icon={<Wrench size={14} />} label={tNav('tools')} onSelect={() => go('/tools')} />
               <Item icon={<Server size={14} />} label={tNav('nodes')} onSelect={() => go('/nodes')} />
               <Item icon={<Activity size={14} />} label={tNav('observability')} onSelect={() => go('/observability')} />
               <Item icon={<KeyRound size={14} />} label={tNav('apiKeys')} onSelect={() => go('/keys')} />

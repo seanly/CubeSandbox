@@ -168,6 +168,7 @@ const (
 	TemplateImageJobTableName   = "t_cube_template_image_job"
 	SnapshotRuntimeRefTableName = "t_cube_snapshot_runtime_ref"
 	SandboxSpecTableName        = "t_cube_sandbox_spec"
+	ToolDefinitionTableName     = "t_cube_tool_definition"
 )
 
 const (
