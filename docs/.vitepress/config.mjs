@@ -150,7 +150,9 @@ export default withMermaid(defineConfig({
                 { text: 'Service Management & Logs', link: '/guide/service-management' },
                 { text: 'Template Inspection & Request Preview', link: '/guide/template-inspection-and-preview' },
                 { text: 'HTTPS & Domain Resolution', link: '/guide/https-and-domain' },
-                { text: 'Authentication', link: '/guide/authentication' }
+                { text: 'Authentication', link: '/guide/authentication' },
+                { text: 'One-Click Deployment Verification', link: '/guide/one-click-verification' },
+                { text: 'Usage Guide', link: '/guide/usage' }
               ]
             },
             {
@@ -245,7 +247,9 @@ export default withMermaid(defineConfig({
                 { text: '服务管理与日志', link: '/zh/guide/service-management' },
                 { text: '模板检查与请求预览', link: '/zh/guide/template-inspection-and-preview' },
                 { text: 'HTTPS 证书与域名解析', link: '/zh/guide/https-and-domain' },
-                { text: '鉴权', link: '/zh/guide/authentication' }
+                { text: '鉴权', link: '/zh/guide/authentication' },
+                { text: '一键部署与 SDK 验证', link: '/zh/guide/one-click-verification' },
+                { text: '业务使用指南', link: '/zh/guide/usage' }
               ]
             },
             {
