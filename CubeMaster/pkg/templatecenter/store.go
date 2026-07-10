@@ -439,7 +439,7 @@ func NormalizeRequest(req *sandboxtypes.CreateCubeSandboxReq) (*sandboxtypes.Cre
 	}
 	templateID := strings.TrimSpace(cloned.Annotations[constants.CubeAnnotationAppSnapshotTemplateID])
 	if templateID == "" {
-		templateID = generateTemplateID()
+		templateID = GenerateTemplateID()
 	}
 	cloned.Annotations[constants.CubeAnnotationAppSnapshotTemplateID] = templateID
 	cloned.Annotations[constants.CubeAnnotationsAppSnapshotCreate] = "true"
@@ -454,7 +454,7 @@ func NormalizeRequest(req *sandboxtypes.CreateCubeSandboxReq) (*sandboxtypes.Cre
 	return cloned, templateID, nil
 }
 
-func generateTemplateID() string {
+func GenerateTemplateID() string {
 	return "tpl-" + strings.ReplaceAll(uuid.New().String(), "-", "")[:24]
 }
 
@@ -1231,6 +1231,9 @@ func applyTemplateRequest(templateReq, reqInOut *sandboxtypes.CreateCubeSandboxR
 	}
 	if reqInOut.RuntimeHandler == "" {
 		reqInOut.RuntimeHandler = templateReq.RuntimeHandler
+	}
+	if reqInOut.Timeout <= 0 && templateReq.Timeout > 0 {
+		reqInOut.Timeout = templateReq.Timeout
 	}
 	if reqInOut.Namespace == "" {
 		reqInOut.Namespace = templateReq.Namespace

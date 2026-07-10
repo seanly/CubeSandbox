@@ -5,12 +5,12 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { toolApi, type ToolDetail, type ToolStorageMount } from '@/api/client';
+import { toolApi, type ToolStorageMount } from '@/api/client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TemplatePicker } from '@/components/TemplatePicker';
 import { Wrench, Plus, Trash2, X } from 'lucide-react';
 import { formatDeleteError } from '@/lib/utils';
 
@@ -23,41 +23,65 @@ interface CreateModalProps {
 function CreateToolModal({ onClose }: CreateModalProps) {
   const { t } = useTranslation('tools');
   const qc = useQueryClient();
-  const [toolID, setToolID] = useState('');
+
   const [name, setName] = useState('');
   const [templateID, setTemplateID] = useState('');
-  const [instanceType, setInstanceType] = useState('');
-  const [networkType, setNetworkType] = useState('');
-  const [mountName, setMountName] = useState('');
-  const [mountPath, setMountPath] = useState('');
-  const [hostPath, setHostPath] = useState('');
+  const [storageMounts, setStorageMounts] = useState<ToolStorageMount[]>([
+    { name: '', mountPath: '', storageSource: { hostDir: { hostPath: '' } } },
+  ]);
 
-  const mutation = useMutation({
-    mutationFn: () => {
-      const storageMounts = [];
-      if (mountName.trim() && mountPath.trim() && hostPath.trim()) {
-        storageMounts.push({
-          name: mountName.trim(),
-          mount_path: mountPath.trim(),
-          storage_source: { host_dir: { host_path: hostPath.trim() } },
-        });
-      }
-      return toolApi.create({
-        tool_id: toolID.trim(),
+  const createMutation = useMutation({
+    mutationFn: () =>
+      toolApi.create({
+        template_id: templateID,
         name: name.trim() || undefined,
-        template_id: templateID.trim(),
-        instance_type: instanceType.trim() || undefined,
-        network_type: networkType.trim() || undefined,
-        storage_mounts: storageMounts,
-      });
-    },
+        storage_mounts: storageMounts
+          .filter(
+            (m) =>
+              m.name.trim() || m.mountPath.trim() || (m.storageSource.hostDir?.hostPath ?? '').trim()
+          )
+          .map((m) =>
+            ({
+              name: m.name,
+              mount_path: m.mountPath,
+              read_only: m.readOnly ?? undefined,
+              storage_source: {
+                host_dir: m.storageSource.hostDir
+                  ? { host_path: m.storageSource.hostDir.hostPath }
+                  : undefined,
+              },
+            })),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tools'] });
       onClose();
     },
   });
 
-  const valid = toolID.trim().length > 0 && templateID.trim().length > 0;
+  const updateMount = (idx: number, patch: Partial<ToolStorageMount>) => {
+    const next = [...storageMounts];
+    next[idx] = { ...next[idx], ...patch };
+    setStorageMounts(next);
+  };
+
+  const updateHostPath = (idx: number, hostPath: string) => {
+    const next = [...storageMounts];
+    next[idx] = {
+      ...next[idx],
+      storageSource: { hostDir: { hostPath } },
+    };
+    setStorageMounts(next);
+  };
+
+  const addMount = () =>
+    setStorageMounts([
+      ...storageMounts,
+      { name: '', mountPath: '', storageSource: { hostDir: { hostPath: '' } } },
+    ]);
+
+  const removeMount = (idx: number) => setStorageMounts(storageMounts.filter((_, i) => i !== idx));
+
+  const valid = templateID.trim().length > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -69,68 +93,64 @@ function CreateToolModal({ onClose }: CreateModalProps) {
           </button>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
-                {t('create.toolID')} <span className="text-destructive text-sm font-bold">*</span>
-              </label>
-              <Input
-                placeholder="sdt-xxxxxxxx"
-                value={toolID}
-                onChange={(e) => setToolID(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">{t('create.name')}</label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-          </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              {t('create.templateID')} <span className="text-destructive text-sm font-bold">*</span>
-            </label>
-            <Input
-              placeholder="tpl-xxxxxxxx"
-              value={templateID}
-              onChange={(e) => setTemplateID(e.target.value)}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">{t('create.instanceType')}</label>
-              <Input value={instanceType} onChange={(e) => setInstanceType(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">{t('create.networkType')}</label>
-              <Input value={networkType} onChange={(e) => setNetworkType(e.target.value)} />
-            </div>
+            <label className="text-xs font-medium text-muted-foreground">{t('create.name')}</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
 
-          <div className="border-t pt-3">
-            <p className="text-xs font-medium text-muted-foreground mb-2">{t('create.storageMount')}</p>
-            <div className="grid grid-cols-3 gap-3">
-              <Input placeholder={t('create.mountName')} value={mountName} onChange={(e) => setMountName(e.target.value)} />
-              <Input placeholder={t('create.mountPath')} value={mountPath} onChange={(e) => setMountPath(e.target.value)} />
-              <Input placeholder={t('create.hostPath')} value={hostPath} onChange={(e) => setHostPath(e.target.value)} />
-            </div>
-          </div>
-
-          {mutation.isError && (
-            <p className="text-xs text-destructive">
-              {(mutation.error as Error)?.message ?? t('create.error')}
+          <div className="border-t pt-3 space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">
+              {t('create.template')} <span className="text-destructive text-sm font-bold">*</span>
             </p>
+            <TemplatePicker selected={templateID} onSelect={setTemplateID} />
+          </div>
+
+          <div className="border-t pt-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">{t('create.storageMount')}</p>
+              <Button type="button" variant="ghost" size="sm" onClick={addMount}>
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                {t('create.addMount')}
+              </Button>
+            </div>
+            {storageMounts.map((mount, idx) => (
+              <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center">
+                <Input
+                  placeholder={t('create.mountName')}
+                  value={mount.name}
+                  onChange={(e) => updateMount(idx, { name: e.target.value })}
+                />
+                <Input
+                  placeholder={t('create.mountPath')}
+                  value={mount.mountPath}
+                  onChange={(e) => updateMount(idx, { mountPath: e.target.value })}
+                />
+                <Input
+                  placeholder={t('create.hostPath')}
+                  value={mount.storageSource.hostDir?.hostPath ?? ''}
+                  onChange={(e) => updateHostPath(idx, e.target.value)}
+                />
+                <button
+                  onClick={() => removeMount(idx)}
+                  className="text-muted-foreground hover:text-destructive p-1"
+                  title={t('create.removeMount')}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {createMutation.isError && (
+            <p className="text-xs text-destructive">{(createMutation.error as Error)?.message ?? t('create.error')}</p>
           )}
 
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="outline" size="sm" onClick={onClose}>
               {t('create.cancel')}
             </Button>
-            <Button
-              size="sm"
-              disabled={!valid || mutation.isPending}
-              onClick={() => mutation.mutate()}
-            >
-              {mutation.isPending ? t('create.creating') : t('create.submit')}
+            <Button size="sm" disabled={!valid || createMutation.isPending} onClick={() => createMutation.mutate()}>
+              {createMutation.isPending ? t('create.creating') : t('create.submit')}
             </Button>
           </div>
         </CardContent>
@@ -210,11 +230,7 @@ export default function Tools() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
-                <div className="flex flex-wrap gap-1.5">
-                  <Badge tone="info" className="text-xs">{t('template')}: {tool.templateID}</Badge>
-                  {tool.instanceType && <Badge tone="mute" className="text-xs">{tool.instanceType}</Badge>}
-                  {tool.networkType && <Badge tone="mute" className="text-xs">{tool.networkType}</Badge>}
-                </div>
+                <p className="text-xs text-muted-foreground">{t('template')}: {tool.templateID}</p>
                 {deleteMutation.isError && deleteMutation.variables === tool.toolID && (
                   <p className="text-xs text-destructive">
                     {formatDeleteError(deleteMutation.error)}

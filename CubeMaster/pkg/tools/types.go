@@ -9,9 +9,6 @@ package tools
 // future phases.
 type StorageSource struct {
 	HostDir *HostDirStorageSource `json:"host_dir,omitempty"`
-	// Cos     *CosStorageSource     `json:"cos,omitempty"`
-	// Cfs     *CfsStorageSource     `json:"cfs,omitempty"`
-	// Image   *ImageStorageSource   `json:"image,omitempty"`
 }
 
 // HostDirStorageSource mounts a host directory into the sandbox via the
@@ -44,3 +41,4 @@ type Tool struct {
 	Labels         map[string]string `json:"labels,omitempty"`
 	Annotations    map[string]string `json:"annotations,omitempty"`
 }
+

@@ -12,8 +12,8 @@ use axum::{
 };
 
 use crate::{
-    error::{AppError, AppResult},
-    models::{ApiError, CreateToolRequest, ToolDetail, ToolSummary},
+    error::AppResult,
+    models::{ApiError, CreateToolRequest, ToolDetail, ToolSummary, UpdateToolRequest},
     state::AppState,
 };
 
@@ -82,7 +82,7 @@ pub async fn create_tool(
     params(
         ("toolID" = String, Path, description = "Tool identifier")
     ),
-    request_body = CreateToolRequest,
+    request_body = UpdateToolRequest,
     responses(
         (status = 200, description = "Tool updated", body = ToolDetail),
         (status = 400, description = "Bad request", body = ApiError),
@@ -93,7 +93,7 @@ pub async fn create_tool(
 pub async fn update_tool(
     State(state): State<AppState>,
     Path(tool_id): Path<String>,
-    Json(body): Json<CreateToolRequest>,
+    Json(body): Json<UpdateToolRequest>,
 ) -> AppResult<impl IntoResponse> {
     let detail = state.services.tools.update_tool(&tool_id, body).await?;
     Ok((StatusCode::OK, Json(detail)))

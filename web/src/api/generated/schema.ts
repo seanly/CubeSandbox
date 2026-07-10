@@ -252,21 +252,10 @@ export interface components {
             totalMemoryMB: number;
         };
         CreateToolRequest: {
-            annotations?: {
-                [key: string]: string;
-            } | null;
-            /** Format: int32 */
-            default_timeout?: number | null;
-            instance_type?: string | null;
-            labels?: {
-                [key: string]: string;
-            } | null;
             name?: string | null;
-            network_type?: string | null;
-            runtime_handler?: string | null;
             storage_mounts?: components["schemas"]["ToolStorageMount"][];
-            template_id?: string | null;
-            tool_id?: string | null;
+            /** @description Reference to an existing CubeSandbox Template. Required. */
+            template_id: string;
         };
         HashMap: {
             [key: string]: string;
@@ -481,6 +470,27 @@ export interface components {
             network_type?: string | null;
             template_id: string;
             tool_id: string;
+        };
+        /**
+         * @description Body for PATCH /tools/{toolID}. Updating a Tool does not modify its
+         *     underlying Template; to change the Template, create a new Tool.
+         */
+        UpdateToolRequest: {
+            annotations?: {
+                [key: string]: string;
+            } | null;
+            /** Format: int32 */
+            default_timeout?: number | null;
+            instance_type?: string | null;
+            labels?: {
+                [key: string]: string;
+            } | null;
+            name?: string | null;
+            network_type?: string | null;
+            runtime_handler?: string | null;
+            storage_mounts?: components["schemas"]["ToolStorageMount"][];
+            template_id?: string | null;
+            tool_id?: string | null;
         };
     };
     responses: never;
@@ -1058,7 +1068,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateToolRequest"];
+                "application/json": components["schemas"]["UpdateToolRequest"];
             };
         };
         responses: {

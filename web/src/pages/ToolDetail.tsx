@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (C) 2026 Tencent. All rights reserved.
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -11,15 +11,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { TemplatePicker } from '@/components/TemplatePicker';
 import { ArrowLeft, Trash2, Edit2, Save, X, Plus } from 'lucide-react';
 
 interface FormState {
   name: string;
   templateID: string;
-  instanceType: string;
-  networkType: string;
-  runtimeHandler: string;
-  defaultTimeout: string;
   storageMounts: ToolStorageMount[];
 }
 
@@ -27,10 +24,6 @@ function detailToForm(detail: ToolDetail): FormState {
   return {
     name: detail.name ?? '',
     templateID: detail.templateID,
-    instanceType: detail.instanceType ?? '',
-    networkType: detail.networkType ?? '',
-    runtimeHandler: detail.runtimeHandler ?? '',
-    defaultTimeout: detail.defaultTimeout?.toString() ?? '',
     storageMounts: detail.storageMounts,
   };
 }
@@ -85,15 +78,10 @@ export default function ToolDetail() {
       tool_id: toolID,
       name: form.name || undefined,
       template_id: form.templateID,
-      instance_type: form.instanceType || undefined,
-      network_type: form.networkType || undefined,
-      runtime_handler: form.runtimeHandler || undefined,
-      default_timeout: form.defaultTimeout ? parseInt(form.defaultTimeout, 10) : undefined,
       storage_mounts: form.storageMounts.map((m) => ({
         name: m.name,
         mount_path: m.mountPath,
         read_only: m.readOnly ?? undefined,
-        sub_path: m.subPath || undefined,
         storage_source: {
           host_dir: m.storageSource.hostDir ? { host_path: m.storageSource.hostDir.hostPath } : undefined,
         },
@@ -221,32 +209,15 @@ export default function ToolDetail() {
             ) : (
               <ReadOnlyField label={t('name')} value={tool.name ?? '-'} />
             )}
-            {isEditing && form ? (
-              <EditField label={t('templateID')} value={form.templateID} onChange={(v) => setForm({ ...form, templateID: v })} />
-            ) : (
-              <ReadOnlyField label={t('templateID')} value={tool.templateID} />
-            )}
-            {isEditing && form ? (
-              <EditField label={t('instanceType')} value={form.instanceType} onChange={(v) => setForm({ ...form, instanceType: v })} />
-            ) : (
-              <ReadOnlyField label={t('instanceType')} value={tool.instanceType ?? '-'} />
-            )}
-            {isEditing && form ? (
-              <EditField label={t('networkType')} value={form.networkType} onChange={(v) => setForm({ ...form, networkType: v })} />
-            ) : (
-              <ReadOnlyField label={t('networkType')} value={tool.networkType ?? '-'} />
-            )}
-            {isEditing && form ? (
-              <EditField label={t('runtimeHandler')} value={form.runtimeHandler} onChange={(v) => setForm({ ...form, runtimeHandler: v })} />
-            ) : (
-              <ReadOnlyField label={t('runtimeHandler')} value={tool.runtimeHandler ?? '-'} />
-            )}
-            {isEditing && form ? (
-              <EditField label={t('defaultTimeout')} value={form.defaultTimeout} onChange={(v) => setForm({ ...form, defaultTimeout: v })} />
-            ) : (
-              <ReadOnlyField label={t('defaultTimeout')} value={tool.defaultTimeout?.toString() ?? '-'} />
-            )}
           </div>
+          {isEditing && form ? (
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground">{t('templateID')}</label>
+              <TemplatePicker selected={form.templateID} onSelect={(id) => setForm({ ...form, templateID: id })} />
+            </div>
+          ) : (
+            <ReadOnlyField label={t('templateID')} value={tool.templateID} />
+          )}
         </CardContent>
       </Card>
 
@@ -270,7 +241,6 @@ export default function ToolDetail() {
                   <div className="grid grid-cols-2 gap-3">
                     <EditField label={t('mountName')} value={mount.name} onChange={(v) => updateMount(idx, { name: v })} />
                     <EditField label={t('mountPath')} value={mount.mountPath} onChange={(v) => updateMount(idx, { mountPath: v })} />
-                    <EditField label={t('subPath')} value={mount.subPath ?? ''} onChange={(v) => updateMount(idx, { subPath: v })} />
                     <EditField label={t('hostPath')} value={mount.storageSource.hostDir?.hostPath ?? ''} onChange={(v) => updateMountHostPath(idx, v)} />
                   </div>
                   <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -303,12 +273,6 @@ export default function ToolDetail() {
                     <span className="text-muted-foreground">{t('mountPath')}: </span>
                     {mount.mountPath}
                   </div>
-                  {mount.subPath && (
-                    <div>
-                      <span className="text-muted-foreground">{t('subPath')}: </span>
-                      {mount.subPath}
-                    </div>
-                  )}
                   {mount.storageSource.hostDir && (
                     <div className="col-span-2">
                       <span className="text-muted-foreground">{t('hostPath')}: </span>

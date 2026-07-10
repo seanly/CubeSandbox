@@ -423,7 +423,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateToolRequest'
+              $ref: '#/components/schemas/UpdateToolRequest'
         required: true
       responses:
         '200':
@@ -592,41 +592,10 @@ components:
           description: Total memory in MiB.
     CreateToolRequest:
       type: object
+      required:
+      - template_id
       properties:
-        annotations:
-          type:
-          - object
-          - 'null'
-          additionalProperties:
-            type: string
-          propertyNames:
-            type: string
-        default_timeout:
-          type:
-          - integer
-          - 'null'
-          format: int32
-        instance_type:
-          type:
-          - string
-          - 'null'
-        labels:
-          type:
-          - object
-          - 'null'
-          additionalProperties:
-            type: string
-          propertyNames:
-            type: string
         name:
-          type:
-          - string
-          - 'null'
-        network_type:
-          type:
-          - string
-          - 'null'
-        runtime_handler:
           type:
           - string
           - 'null'
@@ -635,13 +604,8 @@ components:
           items:
             $ref: '#/components/schemas/ToolStorageMount'
         template_id:
-          type:
-          - string
-          - 'null'
-        tool_id:
-          type:
-          - string
-          - 'null'
+          type: string
+          description: Reference to an existing CubeSandbox Template. Required.
     HashMap:
       type: object
       additionalProperties:
@@ -1150,6 +1114,61 @@ components:
           type: string
         tool_id:
           type: string
+    UpdateToolRequest:
+      type: object
+      description: |-
+        Body for PATCH /tools/{toolID}. Updating a Tool does not modify its
+        underlying Template; to change the Template, create a new Tool.
+      properties:
+        annotations:
+          type:
+          - object
+          - 'null'
+          additionalProperties:
+            type: string
+          propertyNames:
+            type: string
+        default_timeout:
+          type:
+          - integer
+          - 'null'
+          format: int32
+        instance_type:
+          type:
+          - string
+          - 'null'
+        labels:
+          type:
+          - object
+          - 'null'
+          additionalProperties:
+            type: string
+          propertyNames:
+            type: string
+        name:
+          type:
+          - string
+          - 'null'
+        network_type:
+          type:
+          - string
+          - 'null'
+        runtime_handler:
+          type:
+          - string
+          - 'null'
+        storage_mounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolStorageMount'
+        template_id:
+          type:
+          - string
+          - 'null'
+        tool_id:
+          type:
+          - string
+          - 'null'
   securitySchemes:
     apiKeyAuth:
       type: apiKey

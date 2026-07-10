@@ -12,10 +12,10 @@ use utoipa::{
 use crate::{
     handlers,
     models::{
-        ApiError, ClusterOverview, CreateToolRequest, NodeConditionView, NodeResourcesView,
-        NodeView, ResumedSandbox, Sandbox, SandboxDetail, SandboxLogEntry, SandboxLogsV2Response,
-        SandboxState, SandboxVolumeMount, TemplateDetail, TemplateSummary, ToolDetail, ToolStorageMount,
-        ToolStorageSource, ToolHostDirStorageSource, ToolSummary,
+        ApiError, ClusterOverview, CreateToolRequest, NodeConditionView, NodeResourcesView, NodeView,
+        ResumedSandbox, Sandbox, SandboxDetail, SandboxLogEntry, SandboxLogsV2Response, SandboxState,
+        SandboxVolumeMount, TemplateDetail, TemplateSummary, ToolDetail, ToolHostDirStorageSource,
+        ToolStorageMount, ToolStorageSource, ToolSummary, UpdateToolRequest,
     },
 };
 
@@ -78,6 +78,7 @@ impl Modify for SecurityAddon {
         ToolSummary,
         ToolDetail,
         CreateToolRequest,
+        UpdateToolRequest,
         ToolStorageMount,
         ToolStorageSource,
         ToolHostDirStorageSource,

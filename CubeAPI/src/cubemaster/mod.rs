@@ -1861,7 +1861,7 @@ pub struct NodeResponse {
 // ─── Tool ────────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Serialize, Clone, Default)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CreateToolRequest {
     #[serde(rename = "RequestID", alias = "requestID", skip_serializing_if = "String::is_empty")]
     pub request_id: String,
@@ -1869,7 +1869,7 @@ pub struct CreateToolRequest {
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ToolDeleteRequest {
     #[serde(rename = "RequestID", alias = "requestID", skip_serializing_if = "String::is_empty")]
     pub request_id: String,
@@ -1877,7 +1877,7 @@ pub struct ToolDeleteRequest {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ToolResponse {
     #[serde(default, rename = "RequestID", alias = "requestID")]
     pub request_id: String,
@@ -1887,7 +1887,7 @@ pub struct ToolResponse {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ToolListResponse {
     #[serde(default, rename = "RequestID", alias = "requestID")]
     pub request_id: String,
@@ -1897,7 +1897,7 @@ pub struct ToolListResponse {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct ToolDeleteResponse {
     #[serde(default, rename = "RequestID", alias = "requestID")]
     pub request_id: String,
@@ -1905,7 +1905,7 @@ pub struct ToolDeleteResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct Tool {
     pub tool_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1928,7 +1928,7 @@ pub struct Tool {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct StorageMount {
     pub name: String,
     pub mount_path: String,
@@ -1940,14 +1940,14 @@ pub struct StorageMount {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct StorageSource {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub host_dir: Option<HostDirStorageSource>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct HostDirStorageSource {
     pub host_path: String,
 }

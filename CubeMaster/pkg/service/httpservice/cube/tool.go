@@ -19,11 +19,12 @@ import (
 )
 
 var (
-	createToolFn = tools.CreateTool
-	getToolFn    = tools.GetTool
-	listToolsFn  = listToolsFromStore
-	updateToolFn = updateToolInStore
-	deleteToolFn = deleteToolFromStore
+	createToolFn     = tools.CreateTool
+	getToolFn        = tools.GetTool
+	listToolsFn      = listToolsFromStore
+	updateToolFn     = updateToolInStore
+	deleteToolFn     = deleteToolFromStore
+	generateToolIDFn = tools.GenerateToolID
 )
 
 func listToolsFromStore(ctx context.Context) ([]*tools.Tool, error) {
@@ -102,18 +103,30 @@ func createTool(w http.ResponseWriter, r *http.Request, rt *CubeLog.RequestTrace
 	if req.Tool == nil {
 		return newToolErrorResponse(req.RequestID, errorcode.ErrorCode_MasterParamsError, "tool is required")
 	}
-	if req.Tool.ToolID == "" {
-		return newToolErrorResponse(req.RequestID, errorcode.ErrorCode_MasterParamsError, "tool_id is required")
-	}
 	if req.Tool.TemplateID == "" {
 		return newToolErrorResponse(req.RequestID, errorcode.ErrorCode_MasterParamsError, "template_id is required")
 	}
 
 	ctx := log.WithLogger(r.Context(), log.G(r.Context()).WithFields(map[string]any{
-		"RequestId": req.RequestID,
-		"ToolID":    req.Tool.ToolID,
-		"Action":    "CreateTool",
+		"RequestId":  req.RequestID,
+		"Action":     "CreateTool",
+		"TemplateID": req.Tool.TemplateID,
 	}))
+
+	// Validate the referenced template exists before persisting the Tool.
+	if _, err := getTemplateInfoFn(ctx, req.Tool.TemplateID); err != nil {
+		return newToolErrorResponse(req.RequestID, errorcode.ErrorCode_MasterParamsError,
+			"template_id does not exist: "+err.Error())
+	}
+
+	// Generate a ToolID if the caller did not supply one.
+	if req.Tool.ToolID == "" {
+		toolID, err := allocateToolID(ctx)
+		if err != nil {
+			return newToolErrorResponse(req.RequestID, errorcode.ErrorCode_MasterInternalError, err.Error())
+		}
+		req.Tool.ToolID = toolID
+	}
 
 	if err := createToolFn(ctx, req.Tool); err != nil {
 		return newToolErrorResponse(req.RequestID, errorcode.ErrorCode_MasterInternalError, err.Error())
@@ -123,6 +136,22 @@ func createTool(w http.ResponseWriter, r *http.Request, rt *CubeLog.RequestTrace
 		Res:  &types.Res{RequestID: req.RequestID, Ret: &types.Ret{RetCode: int(errorcode.ErrorCode_Success)}},
 		Tool: req.Tool,
 	}
+}
+
+func allocateToolID(ctx context.Context) (string, error) {
+	for i := 0; i < 10; i++ {
+		id, err := generateToolIDFn()
+		if err != nil {
+			return "", err
+		}
+		if _, err := getToolFn(ctx, id); err != nil {
+			if strings.Contains(err.Error(), "not found") {
+				return id, nil
+			}
+			return "", err
+		}
+	}
+	return "", errors.New("failed to allocate unique tool_id after retries")
 }
 
 func getTool(w http.ResponseWriter, r *http.Request, rt *CubeLog.RequestTrace) interface{} {

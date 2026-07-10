@@ -103,6 +103,8 @@ func (s *internalHttp) registerHandlers() {
 	cubeGroup.HandleFunc(cube.RootfsArtifactAction, cube.HttpHandler).Methods(http.MethodGet)
 	cubeGroup.HandleFunc(cube.ListInventoryAction, cube.HttpHandler).Methods(http.MethodPost)
 	cubeGroup.HandleFunc(cube.SandboxLogsAction, cube.HttpHandler).Methods(http.MethodGet, http.MethodPost)
+	cubeGroup.HandleFunc(cube.ToolAction, cube.HttpHandler).Methods(http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete)
+	cubeGroup.HandleFunc(cube.ToolAction+"/{tool_id}", cube.HttpHandler).Methods(http.MethodGet)
 
 	internalGroup := r.PathPrefix(inner.InnerURI()).Subrouter()
 	internalGroup.HandleFunc(inner.NodeAction, inner.HttpHandler).Methods(http.MethodGet)

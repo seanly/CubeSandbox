@@ -103,6 +103,18 @@ pub struct ToolDetail {
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct CreateToolRequest {
+    /// Reference to an existing CubeSandbox Template. Required.
+    pub template_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub storage_mounts: Vec<ToolStorageMount>,
+}
+
+/// Body for PATCH /tools/{toolID}. Updating a Tool does not modify its
+/// underlying Template; to change the Template, create a new Tool.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct UpdateToolRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tool_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]

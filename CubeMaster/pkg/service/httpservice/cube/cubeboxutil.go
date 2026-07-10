@@ -368,21 +368,16 @@ func tryResolveAndApplyTool(ctx context.Context, templateID string, reqInOut *ty
 
 	reqInOut.ToolID = tool.ToolID
 
-	// Merge Tool defaults (request values take precedence).
+	// Resolve the underlying Template and inherit its runtime defaults.
 	if tool.TemplateID != "" {
 		reqInOut.Annotations[constants.CubeAnnotationAppSnapshotTemplateID] = tool.TemplateID
-	}
-	if reqInOut.InstanceType == "" && tool.InstanceType != "" {
-		reqInOut.InstanceType = tool.InstanceType
-	}
-	if reqInOut.NetworkType == "" && tool.NetworkType != "" {
-		reqInOut.NetworkType = tool.NetworkType
-	}
-	if reqInOut.RuntimeHandler == "" && tool.RuntimeHandler != "" {
-		reqInOut.RuntimeHandler = tool.RuntimeHandler
-	}
-	if reqInOut.Timeout <= 0 && tool.DefaultTimeout > 0 {
-		reqInOut.Timeout = tool.DefaultTimeout
+		info, err := templatecenter.GetTemplateInfo(ctx, tool.TemplateID)
+		if err != nil {
+			return fmt.Errorf("failed to get template info for tool %q: %w", tool.ToolID, err)
+		}
+		if reqInOut.InstanceType == "" && info.InstanceType != "" {
+			reqInOut.InstanceType = info.InstanceType
+		}
 	}
 	if len(tool.Labels) > 0 {
 		if reqInOut.Labels == nil {

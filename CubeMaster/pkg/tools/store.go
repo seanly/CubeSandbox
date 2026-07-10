@@ -111,10 +111,12 @@ func (s *Store) UpdateTool(ctx context.Context, tool *Tool) error {
 		Updates(def).Error
 }
 
-// DeleteTool soft-deletes a Tool definition.
+// DeleteTool hard-deletes a Tool definition so the unique index on tool_id
+// does not block re-creating a tool with the same ID after deletion.
 func (s *Store) DeleteTool(ctx context.Context, toolID string) error {
 	return s.db.WithContext(ctx).
 		Where("tool_id = ?", toolID).
+		Unscoped().
 		Delete(&models.ToolDefinition{}).Error
 }
 

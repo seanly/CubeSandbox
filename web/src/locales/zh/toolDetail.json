@@ -14,12 +14,7 @@
   "toolID": "工具 ID",
   "name": "名称",
   "templateID": "模板 ID",
-  "instanceType": "实例类型",
-  "networkType": "网络类型",
-  "runtimeHandler": "运行时处理器",
-  "defaultTimeout": "默认超时",
   "mountName": "挂载名称",
   "mountPath": "挂载路径",
-  "subPath": "子路径",
   "hostPath": "宿主机路径"
 }

@@ -1879,7 +1879,7 @@ func normalizeTemplateImageRequest(req *types.CreateTemplateFromImageReq) (*type
 	}
 	cloned.ExposedPorts = exposedPorts
 	if strings.TrimSpace(cloned.TemplateID) == "" {
-		cloned.TemplateID = generateTemplateID()
+		cloned.TemplateID = GenerateTemplateID()
 	}
 	if cloned.InstanceType == "" {
 		cloned.InstanceType = cubeboxv1.InstanceType_cubebox.String()

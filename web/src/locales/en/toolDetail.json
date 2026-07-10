@@ -14,12 +14,7 @@
   "toolID": "Tool ID",
   "name": "Name",
   "templateID": "Template ID",
-  "instanceType": "Instance Type",
-  "networkType": "Network Type",
-  "runtimeHandler": "Runtime Handler",
-  "defaultTimeout": "Default Timeout",
   "mountName": "Mount Name",
   "mountPath": "Mount Path",
-  "subPath": "Sub Path",
   "hostPath": "Host Path"
 }
