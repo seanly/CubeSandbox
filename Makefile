@@ -85,7 +85,7 @@ CHINA_PROTOC_DOWNLOAD_URL ?= https://proxy.syscube.dev/https://github.com/protoc
 CHINA_LIBSECCOMP_DOWNLOAD_URL ?= https://proxy.syscube.dev/https://github.com/seccomp/libseccomp/releases/download/v2.5.5/libseccomp-2.5.5.tar.gz
 CHINA_GOPROXY ?= https://goproxy.cn,https://goproxy.io,direct
 CHINA_NPM_REGISTRY ?= https://registry.npmmirror.com
-CHINA_CARGO_REGISTRY_URL ?=
+CHINA_CARGO_REGISTRY_URL ?= sparse+https://rsproxy.cn/index/
 
 DOCKER_GIT_CRED =
 ifneq ($(wildcard $(HOME)/.git-credentials),)
@@ -192,6 +192,10 @@ prepare-builder-home:
 		"$(BUILDER_HOME)/.config" \
 		"$(BUILDER_HOME)/.cargo" \
 		"$(BUILDER_HOME)/go"
+	@printf '[registries.crates-io]\nprotocol = "sparse"\n\n[net]\ngit-fetch-with-cli = true\n' > "$(BUILDER_HOME)/.cargo/config.toml"
+	@if [ -n "$(CARGO_REGISTRY_URL)" ]; then \
+		printf '\n[source.crates-io]\nreplace-with = "mirror"\n\n[source.mirror]\nregistry = "%s"\n' "$(CARGO_REGISTRY_URL)" >> "$(BUILDER_HOME)/.cargo/config.toml"; \
+	fi
 
 .PHONY: prepare-tmp-git-credentials
 prepare-tmp-git-credentials:
