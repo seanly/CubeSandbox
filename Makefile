@@ -71,7 +71,7 @@ export CUBE_VERSION CUBE_COMMIT CUBE_BUILD_TIME
 # Override these via environment variables or make variables.
 APT_PRIMARY_MIRROR ?= http://mirrors.tencent.com/ubuntu
 APT_SECURITY_MIRROR ?= http://mirrors.tencent.com/ubuntu
-GO_DOWNLOAD_URL ?= https://go.dev/dl/go1.24.8.linux-amd64.tar.gz
+GO_DOWNLOAD_URL ?= https://go.dev/dl/go1.25.7.linux-amd64.tar.gz
 PROTOC_DOWNLOAD_URL ?= https://github.com/protocolbuffers/protobuf/releases/download/v28.3/protoc-28.3-linux-x86_64.zip
 LIBSECCOMP_DOWNLOAD_URL ?= https://github.com/seccomp/libseccomp/releases/download/v2.5.5/libseccomp-2.5.5.tar.gz
 GOPROXY ?= https://proxy.golang.org,direct
@@ -80,7 +80,7 @@ CARGO_REGISTRY_URL ?=
 NODE_DOWNLOAD_URL ?=
 
 # Convenience defaults for building behind the China firewall.
-CHINA_GO_DOWNLOAD_URL ?= https://mirrors.aliyun.com/golang/go1.24.8.linux-amd64.tar.gz
+CHINA_GO_DOWNLOAD_URL ?= https://mirrors.aliyun.com/golang/go1.25.7.linux-amd64.tar.gz
 CHINA_PROTOC_DOWNLOAD_URL ?= https://proxy.syscube.dev/https://github.com/protocolbuffers/protobuf/releases/download/v28.3/protoc-28.3-linux-x86_64.zip
 CHINA_LIBSECCOMP_DOWNLOAD_URL ?= https://proxy.syscube.dev/https://github.com/seccomp/libseccomp/releases/download/v2.5.5/libseccomp-2.5.5.tar.gz
 CHINA_GOPROXY ?= https://goproxy.cn,https://goproxy.io,direct
