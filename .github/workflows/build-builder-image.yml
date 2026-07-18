@@ -71,7 +71,7 @@ jobs:
             echo "${IMAGE_NAME}:sha-${short_sha}-${ARCH}"
             if [[ "${IS_RELEASE_PUSH}" == "true" ]]; then
               echo "${IMAGE_NAME}:latest-${ARCH}"
-              echo "${IMAGE_NAME}:ubuntu2004-${ARCH}"
+              echo "${IMAGE_NAME}:ubuntu2204-${ARCH}"
             fi
             echo "EOF"
           } >> "${GITHUB_OUTPUT}"
@@ -120,7 +120,7 @@ jobs:
             "${IMAGE_NAME}:sha-${short_sha}-amd64" \
             "${IMAGE_NAME}:sha-${short_sha}-arm64"
           docker buildx imagetools create \
-            -t "${IMAGE_NAME}:ubuntu2004" \
+            -t "${IMAGE_NAME}:ubuntu2204" \
             "${IMAGE_NAME}:sha-${short_sha}-amd64" \
             "${IMAGE_NAME}:sha-${short_sha}-arm64"
           docker buildx imagetools create \

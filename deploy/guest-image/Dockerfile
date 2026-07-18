@@ -1,4 +1,5 @@
-FROM tencentos/tencentos4-minimal:latest
+ARG BASE_IMAGE=registry.cn-chengdu.aliyuncs.com/seanly/toolset:tencentos-latest-1
+FROM ${BASE_IMAGE}
 
 WORKDIR /work
 

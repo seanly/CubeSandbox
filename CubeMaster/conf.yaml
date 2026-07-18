@@ -110,3 +110,11 @@ scheduler:
       - "mem"
       - "template_locality"
       - "realtime_create_num"
+
+extra_conf:
+  # Allowed host directories that can be bind-mounted into sandboxes.
+  # The bundled E2B test suite uses /tmp/cube-hostmount/{rw,ro}; keep
+  # /data/shared for backward compatibility with existing templates.
+  allowed_host_mount_prefixes:
+    - "/data/shared/"
+    - "/tmp/cube-hostmount/"

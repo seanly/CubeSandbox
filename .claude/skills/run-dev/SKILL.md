@@ -27,7 +27,7 @@ make builder-image
 
 ## Build
 
-All builds happen inside the `cube-sandbox-builder:ubuntu2004` Docker image.
+All builds happen inside the `cube-sandbox-builder:ubuntu2204` Docker image.
 Binaries land in `_output/bin/`.
 
 ### Build all Go components

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (C) 2026 Tencent. All rights reserved.
 
-BUILDER_IMAGE ?= cube-sandbox-builder:ubuntu2004
+BUILDER_IMAGE ?= cube-sandbox-builder:ubuntu2204
 BUILDER_DOCKERFILE ?= docker/Dockerfile.builder
 BUILDER_HOME ?= $(HOME)/.cache/cube-sandbox-builder
 BUILDER_CONTAINER_HOME ?= /home/builder
@@ -67,6 +67,44 @@ CUBE_COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null || echo unknown)
 CUBE_BUILD_TIME ?= $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 export CUBE_VERSION CUBE_COMMIT CUBE_BUILD_TIME
 
+# Mirror / proxy settings. Defaults are tuned for China mainland networks;
+# override these via environment variables or make variables if you need the
+# upstream mirrors.
+APT_PRIMARY_MIRROR ?= http://mirrors.tencent.com/ubuntu
+APT_SECURITY_MIRROR ?= http://mirrors.tencent.com/ubuntu
+GO_DOWNLOAD_URL ?= $(CHINA_GO_DOWNLOAD_URL)
+PROTOC_DOWNLOAD_URL ?= $(CHINA_PROTOC_DOWNLOAD_URL)
+LIBSECCOMP_DOWNLOAD_URL ?= $(CHINA_LIBSECCOMP_DOWNLOAD_URL)
+ifeq ($(strip $(GOPROXY)),)
+  override GOPROXY = $(CHINA_GOPROXY)
+endif
+ifeq ($(strip $(NPM_CONFIG_REGISTRY)),)
+  override NPM_CONFIG_REGISTRY = $(CHINA_NPM_REGISTRY)
+endif
+CARGO_REGISTRY_URL ?= sparse+https://mirrors.aliyun.com/crates.io-index/
+RUSTUP_DIST_SERVER ?= https://mirrors.ustc.edu.cn/rust-static
+RUSTUP_UPDATE_ROOT ?= https://mirrors.ustc.edu.cn/rust-static/rustup
+
+# Convenience defaults for building behind the China firewall.
+CHINA_GO_DOWNLOAD_URL ?= https://mirrors.aliyun.com/golang/go1.24.8.linux-amd64.tar.gz
+CHINA_PROTOC_DOWNLOAD_URL ?= https://proxy.syscube.dev/https://github.com/protocolbuffers/protobuf/releases/download/v28.3/protoc-28.3-linux-x86_64.zip
+CHINA_LIBSECCOMP_DOWNLOAD_URL ?= https://proxy.syscube.dev/https://github.com/seccomp/libseccomp/releases/download/v2.5.5/libseccomp-2.5.5.tar.gz
+CHINA_GOPROXY ?= https://goproxy.cn,https://goproxy.io,direct
+CHINA_NPM_REGISTRY ?= https://registry.npmmirror.com
+CHINA_CARGO_REGISTRY_URL ?= sparse+https://mirrors.aliyun.com/crates.io-index/
+
+BUILDER_DOCKER_BUILD_ARGS = \
+	--build-arg APT_PRIMARY_MIRROR="$(APT_PRIMARY_MIRROR)" \
+	--build-arg APT_SECURITY_MIRROR="$(APT_SECURITY_MIRROR)" \
+	--build-arg GO_DOWNLOAD_URL="$(GO_DOWNLOAD_URL)" \
+	--build-arg PROTOC_DOWNLOAD_URL="$(PROTOC_DOWNLOAD_URL)" \
+	--build-arg LIBSECCOMP_DOWNLOAD_URL="$(LIBSECCOMP_DOWNLOAD_URL)" \
+	--build-arg GOPROXY="$(GOPROXY)" \
+	--build-arg NPM_CONFIG_REGISTRY="$(NPM_CONFIG_REGISTRY)" \
+	--build-arg CARGO_REGISTRY_URL="$(CARGO_REGISTRY_URL)" \
+	--build-arg RUSTUP_DIST_SERVER="$(RUSTUP_DIST_SERVER)" \
+	--build-arg RUSTUP_UPDATE_ROOT="$(RUSTUP_UPDATE_ROOT)"
+
 DOCKER_GIT_CRED =
 ifneq ($(wildcard $(HOME)/.git-credentials),)
 DOCKER_GIT_CRED += -v $(TMP_GIT_CREDENTIALS):$(BUILDER_CONTAINER_HOME)/.git-credentials
@@ -79,6 +117,7 @@ all: $(BINARIES)
 help:
 	@printf "Targets:\n"
 	@printf "  builder-image  Build unified builder image (%s)\n" "$(BUILDER_IMAGE)"
+	@printf "  pvm-release          Build PVM release bundle (image + vmlinux-pvm + bundle)\n"
 	@printf "  builder-shell  Start interactive shell with persisted HOME (%s)\n" "$(BUILDER_HOME)"
 	@printf "  builder-run    Run command inside builder image (BUILDER_CMD=...)\n"
 	@printf "  cubemaster    Build cubemaster and cubemastercli in Docker\n"
@@ -112,13 +151,33 @@ help:
 	@printf "  - release outputs are written to %s\n" "$(RELEASE_DIR)"
 	@printf "  - Run 'make builder-image' first if image %s is missing\n" "$(BUILDER_IMAGE)"
 
-.PHONY: builder-image
+.PHONY: builder-image builder-image-china pvm-release
 builder-image:
 	@if [ -z "$(BUILDER_FORCE_REBUILD)" ] && docker image inspect $(BUILDER_IMAGE) >/dev/null 2>&1; then \
 		printf 'Builder image %s already present, skipping build (set BUILDER_FORCE_REBUILD=1 to rebuild)\n' "$(BUILDER_IMAGE)"; \
 	else \
-		docker build -t $(BUILDER_IMAGE) -f $(BUILDER_DOCKERFILE) ./docker; \
+		docker build $(if $(BUILDER_FORCE_REBUILD),--no-cache) -t $(BUILDER_IMAGE) -f $(BUILDER_DOCKERFILE) $(BUILDER_DOCKER_BUILD_ARGS) ./docker; \
 	fi
+
+.PHONY: docker-build-builder
+docker-build-builder:
+	docker build $(BUILDER_DOCKER_BUILD_EXTRA) -t $(BUILDER_IMAGE) -f $(BUILDER_DOCKERFILE) $(BUILDER_DOCKER_BUILD_ARGS) ./docker
+
+# Backwards-compatible alias; China mirrors are now the default.
+builder-image-china: builder-image
+
+pvm-release: builder-image
+	@if [ ! -f "$(ROOT_DIR)/deploy/one-click/assets/kernel-artifacts/vmlinux-pvm" ]; then \
+		printf 'Downloading vmlinux-pvm...\n'; \
+		"$(ROOT_DIR)/scripts/download-vmlinux.sh" --only-pvm; \
+	else \
+		printf 'vmlinux-pvm already present\n'; \
+	fi
+	@printf 'Installing PVM kernel as default vmlinux...\n'
+	@cp -f "$(ROOT_DIR)/deploy/one-click/assets/kernel-artifacts/vmlinux-pvm" \
+		"$(ROOT_DIR)/deploy/one-click/assets/kernel-artifacts/vmlinux"
+	@printf 'Building PVM release bundle...\n'
+		"$(ROOT_DIR)/deploy/one-click/build-release-bundle-builder.sh"
 
 .PHONY: prepare-builder-home
 prepare-builder-home:
@@ -144,12 +203,20 @@ builder-shell: prepare-builder-home prepare-tmp-git-credentials
 		-e CARGO_HOME=$(BUILDER_CONTAINER_HOME)/.cargo \
 		-e RUSTUP_HOME=/usr/local/rustup \
 		-e GOPATH=$(BUILDER_CONTAINER_HOME)/go \
+		-e GOPROXY="$(GOPROXY)" \
+		-e NPM_CONFIG_REGISTRY="$(NPM_CONFIG_REGISTRY)" \
+		-e CARGO_REGISTRY_URL="$(CARGO_REGISTRY_URL)" \
 		-v "$(ROOT_DIR)":/workspace \
 		-v "$(BUILDER_HOME)":$(BUILDER_CONTAINER_HOME) \
 		$(DOCKER_GIT_CRED) \
 		-w /workspace \
 		$(BUILDER_IMAGE) \
-		bash -lc 'mkdir -p "$$HOME" "$$CARGO_HOME" "$$GOPATH" "$$HOME/.cache" "$$HOME/.config" && exec bash'
+		bash -lc 'mkdir -p "$$HOME" "$$CARGO_HOME" "$$GOPATH" "$$HOME/.cache" "$$HOME/.config" && \
+		  cp -f /usr/local/cargo/config.toml "$$CARGO_HOME/config.toml" && \
+		  if [ -n "$$CARGO_REGISTRY_URL" ]; then \
+		    printf '"'"'[registries.crates-io]\nprotocol = \"sparse\"\n\n[net]\ngit-fetch-with-cli = true\n\n[source.crates-io]\nreplace-with = \"mirror\"\n\n[source.mirror]\nregistry = \"%s\"\n'"'"' "$$CARGO_REGISTRY_URL" > "$$CARGO_HOME/config.toml"; \
+		  fi && \
+		  exec bash'
 
 .PHONY: builder-run
 builder-run: prepare-builder-home prepare-tmp-git-credentials
@@ -160,6 +227,9 @@ builder-run: prepare-builder-home prepare-tmp-git-credentials
 		-e CARGO_HOME=$(BUILDER_CONTAINER_HOME)/.cargo \
 		-e RUSTUP_HOME=/usr/local/rustup \
 		-e GOPATH=$(BUILDER_CONTAINER_HOME)/go \
+		-e GOPROXY="$(GOPROXY)" \
+		-e NPM_CONFIG_REGISTRY="$(NPM_CONFIG_REGISTRY)" \
+		-e CARGO_REGISTRY_URL="$(CARGO_REGISTRY_URL)" \
 		-e BUILDER_CMD="$(BUILDER_CMD)" \
 		-e CUBE_VERSION \
 		-e CUBE_COMMIT \
@@ -170,7 +240,12 @@ builder-run: prepare-builder-home prepare-tmp-git-credentials
 		$(DOCKER_GIT_CRED) \
 		-w /workspace \
 		$(BUILDER_IMAGE) \
-		bash -lc 'mkdir -p "$$HOME" "$$CARGO_HOME" "$$GOPATH" "$$HOME/.cache" "$$HOME/.config" && exec bash -lc "$$BUILDER_CMD"'
+		bash -lc 'mkdir -p "$$HOME" "$$CARGO_HOME" "$$GOPATH" "$$HOME/.cache" "$$HOME/.config" && \
+		  cp -f /usr/local/cargo/config.toml "$$CARGO_HOME/config.toml" && \
+		  if [ -n "$$CARGO_REGISTRY_URL" ]; then \
+		    printf '"'"'[registries.crates-io]\nprotocol = \"sparse\"\n\n[net]\ngit-fetch-with-cli = true\n\n[source.crates-io]\nreplace-with = \"mirror\"\n\n[source.mirror]\nregistry = \"%s\"\n'"'"' "$$CARGO_REGISTRY_URL" > "$$CARGO_HOME/config.toml"; \
+		  fi && \
+		  exec bash -lc "$$BUILDER_CMD"'
 
 .PHONY: cubecow-sdk
 cubecow-sdk:
@@ -283,28 +358,33 @@ manual-release: all
 		"$(RELEASE_DIR)/deploy-manual.sh"
 
 .PHONY: web-install
-web-install:
-	cd "$(WEB_DIR)" && npm install
+web-install: builder-image
+	$(MAKE) builder-run BUILDER_CMD='cd /workspace/web && npm config set registry "$(NPM_CONFIG_REGISTRY)" && npm install'
 
 .PHONY: web-dev
 web-dev:
 	cd "$(WEB_DIR)" && npm run dev
 
 .PHONY: web-build
-web-build:
-	cd "$(WEB_DIR)" && npm run build
+web-build: builder-image
+	$(MAKE) builder-run BUILDER_CMD='cd /workspace/web && npm config set registry "$(NPM_CONFIG_REGISTRY)" && npm ci && npm run build'
+
+##TARGET web-build-in-builder: build WebUI static assets when already inside the builder container
+.PHONY: web-build-in-builder
+web-build-in-builder:
+	cd "$(WEB_DIR)" && npm config set registry "$(NPM_CONFIG_REGISTRY)" && npm ci && npm run build
 
 .PHONY: web-preview
 web-preview:
 	cd "$(WEB_DIR)" && npm run preview
 
 .PHONY: web-lint
-web-lint:
-	cd "$(WEB_DIR)" && npm run lint
+web-lint: builder-image
+	$(MAKE) builder-run BUILDER_CMD='cd /workspace/web && npm config set registry "$(NPM_CONFIG_REGISTRY)" && npm ci && npm run lint'
 
 .PHONY: web-api-sync
-web-api-sync:
-	cd "$(WEB_DIR)" && npm run api:sync
+web-api-sync: builder-image
+	$(MAKE) builder-run BUILDER_CMD='cd /workspace/web && npm config set registry "$(NPM_CONFIG_REGISTRY)" && npm ci && npm run api:sync'
 
 .PHONY: web-sync-dev-env
 web-sync-dev-env:

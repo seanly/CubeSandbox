@@ -88,6 +88,9 @@ CUBE_SIDECAR_NGX_ADDR="${CUBE_SIDECAR_NGX_ADDR:-${CUBE_LCM_HOST}:${CUBE_LCM_PORT
 # value gates loopback-bypass abuse; leave empty for single-host dev.
 CUBE_ADMIN_TOKEN="${CUBE_ADMIN_TOKEN:-}"
 
+CUBE_PROXY_SSL_CERT_SRC="${CUBE_PROXY_SSL_CERT_SRC:-}"
+CUBE_PROXY_SSL_KEY_SRC="${CUBE_PROXY_SSL_KEY_SRC:-}"
+
 # ── CubeProxy service registration for cube-lifecycle-manager discovery ──
 # Enabled by default now that CLM owns lifecycle coordination.
 CUBE_PROXY_REGISTRY_ENABLE="${CUBE_PROXY_REGISTRY_ENABLE:-1}"
@@ -132,6 +135,14 @@ install_mkcert() {
 
 prepare_proxy_certs() {
   mkdir -p "${CERT_DIR}"
+
+  # If explicit source cert paths are provided, copy them into the cert dir.
+  if [[ -n "${CUBE_PROXY_SSL_CERT_SRC:-}" && -n "${CUBE_PROXY_SSL_KEY_SRC:-}" ]]; then
+    install -m 0644 -D "${CUBE_PROXY_SSL_CERT_SRC}" "${CERT_DIR}/${CUBE_PROXY_SSL_CERT}"
+    install -m 0644 -D "${CUBE_PROXY_SSL_KEY_SRC}" "${CERT_DIR}/${CUBE_PROXY_SSL_KEY}"
+    return 0
+  fi
+
   if [[ -f "${CERT_DIR}/${CUBE_PROXY_SSL_CERT}" && -f "${CERT_DIR}/${CUBE_PROXY_SSL_KEY}" ]]; then
     return 0
   fi

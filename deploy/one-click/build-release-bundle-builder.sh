@@ -11,9 +11,13 @@ if [[ -f "${ENV_FILE}" ]]; then
   load_env_file "${ENV_FILE}"
 fi
 
+# Default to the Aliyun sparse crates.io mirror so cargo builds work
+# out of the box on networks that cannot reach index.crates.io.
+: "${CARGO_REGISTRY_URL:=sparse+https://mirrors.aliyun.com/crates.io-index/}"
+
 PREBUILT_DIR="${SCRIPT_DIR}/.work/prebuilt"
 HELPER_SCRIPT="${SCRIPT_DIR}/.work/build-prebuilt-in-builder.sh"
-BUILDER_IMAGE_REF="${BUILDER_IMAGE:-cube-sandbox-builder:ubuntu2004}"
+BUILDER_IMAGE_REF="${BUILDER_IMAGE:-cube-sandbox-builder:ubuntu2204}"
 
 CUBE_VERSION_FROM_ENV="${CUBE_VERSION:-}"
 LATEST_RELEASE_TAG="$(git -C "${ROOT_DIR}" describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)"
@@ -98,18 +102,35 @@ echo "[one-click] building shim workspace in builder" >&2
 (cd /workspace/CubeShim && cargo build --release --locked)
 install -m 0755 /workspace/CubeShim/target/release/containerd-shim-cube-rs "${PREBUILT_DIR}/containerd-shim-cube-rs"
 install -m 0755 /workspace/CubeShim/target/release/cube-runtime "${PREBUILT_DIR}/cube-runtime"
+
+echo "[one-click] building web dashboard in builder" >&2
+mkdir -p "${PREBUILT_DIR}/web-dist"
+make -C /workspace web-build-in-builder
+cp -a /workspace/web/dist/. "${PREBUILT_DIR}/web-dist/"
 SCRIPT_EOF
 
 chmod 0755 "${HELPER_SCRIPT}"
 
 if ! docker image inspect "${BUILDER_IMAGE_REF}" >/dev/null 2>&1; then
   log "builder image ${BUILDER_IMAGE_REF} missing, building it first"
-  make -C "${ROOT_DIR}" builder-image BUILDER_IMAGE="${BUILDER_IMAGE_REF}" >&2
+  make -C "${ROOT_DIR}" builder-image \
+    BUILDER_IMAGE="${BUILDER_IMAGE_REF}" \
+    GO_DOWNLOAD_URL="${GO_DOWNLOAD_URL:-}" \
+    PROTOC_DOWNLOAD_URL="${PROTOC_DOWNLOAD_URL:-}" \
+    LIBSECCOMP_DOWNLOAD_URL="${LIBSECCOMP_DOWNLOAD_URL:-}" \
+    GOPROXY="${GOPROXY:-}" \
+    NPM_CONFIG_REGISTRY="${NPM_CONFIG_REGISTRY:-}" \
+    CARGO_REGISTRY_URL="${CARGO_REGISTRY_URL:-}" \
+    APT_PRIMARY_MIRROR="${APT_PRIMARY_MIRROR:-}" \
+    APT_SECURITY_MIRROR="${APT_SECURITY_MIRROR:-}" >&2
 fi
 
 log "building one-click component binaries in builder"
 make -C "${ROOT_DIR}" builder-run \
   BUILDER_IMAGE="${BUILDER_IMAGE_REF}" \
+  GOPROXY="${GOPROXY:-}" \
+  NPM_CONFIG_REGISTRY="${NPM_CONFIG_REGISTRY:-}" \
+  CARGO_REGISTRY_URL="${CARGO_REGISTRY_URL:-}" \
   BUILDER_CMD="bash /workspace/deploy/one-click/.work/build-prebuilt-in-builder.sh" >&2
 
 for artifact in \
@@ -138,4 +159,5 @@ ONE_CLICK_CUBEVSMAPDUMP_BIN="${PREBUILT_DIR}/cubevsmapdump" \
 ONE_CLICK_CUBE_AGENT_BIN="${PREBUILT_DIR}/cube-agent" \
 ONE_CLICK_CUBESHIM_BIN="${PREBUILT_DIR}/containerd-shim-cube-rs" \
 ONE_CLICK_CUBE_RUNTIME_BIN="${PREBUILT_DIR}/cube-runtime" \
+ONE_CLICK_WEB_DIST_DIR="${PREBUILT_DIR}/web-dist" \
   "${SCRIPT_DIR}/build-release-bundle.sh" "$@"

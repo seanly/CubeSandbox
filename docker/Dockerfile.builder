@@ -1,11 +1,12 @@
 # syntax=docker/dockerfile:1.7
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG APT_PRIMARY_MIRROR=http://mirrors.tencent.com/ubuntu
 ARG APT_SECURITY_MIRROR=http://mirrors.tencent.com/ubuntu
 ARG GO_VERSION=1.24.8
+ARG NODE_VERSION=22.14.0
 ARG PROTOC_VERSION=28.3
 ARG LIBSECCOMP_VERSION=2.5.5
 ARG RUST_TOOLCHAIN_DEFAULT=1.89
@@ -13,9 +14,22 @@ ARG RUST_TOOLCHAIN_HYPERVISOR=1.77.2
 ARG RUST_TOOLCHAIN_E2BAPI=1.85
 ARG RUST_TOOLCHAIN_AGENT=1.89
 ARG GITHUB_ACTIONS=false
-ARG RUSTUP_DIST_SERVER=https://rsproxy.cn
-ARG RUSTUP_UPDATE_ROOT=https://rsproxy.cn/rustup
+ARG RUSTUP_DIST_SERVER=https://mirrors.ustc.edu.cn/rust-static
+ARG RUSTUP_UPDATE_ROOT=https://mirrors.ustc.edu.cn/rust-static/rustup
 ARG TARGETARCH
+
+# Download URLs for toolchain binaries. Override these via --build-arg
+# when building behind a firewall or using a regional mirror.
+ARG GO_DOWNLOAD_URL=https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz
+ARG NODE_DOWNLOAD_URL=
+ARG PROTOC_DOWNLOAD_URL=
+ARG LIBSECCOMP_DOWNLOAD_URL=https://github.com/seccomp/libseccomp/releases/download/v${LIBSECCOMP_VERSION}/libseccomp-${LIBSECCOMP_VERSION}.tar.gz
+
+# Go module proxy and npm registry default to China mainland mirrors; override via
+# --build-arg for other networks.
+ARG GOPROXY=https://goproxy.cn,https://goproxy.io,direct
+ARG NPM_CONFIG_REGISTRY=https://registry.npmmirror.com
+ARG CARGO_REGISTRY_URL=sparse+https://mirrors.aliyun.com/crates.io-index/
 
 ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
@@ -30,7 +44,9 @@ ENV LANG=C.UTF-8 \
     AARCH64_UNKNOWN_LINUX_GNU_OPENSSL_LIB_DIR=/usr/lib/aarch64-linux-gnu \
     AARCH64_UNKNOWN_LINUX_MUSL_OPENSSL_LIB_DIR=/usr/lib/aarch64-linux-gnu \
     LIBSECCOMP_LINK_TYPE=static \
-    LIBSECCOMP_LIB_PATH=/usr/local/lib64/libseccomp/lib
+    LIBSECCOMP_LIB_PATH=/usr/local/lib64/libseccomp/lib \
+    GOPROXY="${GOPROXY}" \
+    NPM_CONFIG_REGISTRY="${NPM_CONFIG_REGISTRY}"
 
 RUN set -eux; \
     TARGETARCH="${TARGETARCH:-$(dpkg --print-architecture)}"; \
@@ -45,14 +61,19 @@ RUN set -eux; \
       echo "PROTOC_ARCH=${PROTOC_ARCH}"; \
     } > /etc/buildenv
 
-RUN apt-get update -o Acquire::Retries=3 \
-    && apt install -y ca-certificates --no-install-recommends
-
 RUN if [ "${GITHUB_ACTIONS}" != "true" ]; then \
         sed -i "s|http://archive.ubuntu.com/ubuntu|${APT_PRIMARY_MIRROR}|g; \
                 s|http://security.ubuntu.com/ubuntu|${APT_SECURITY_MIRROR}|g" \
             /etc/apt/sources.list; \
     fi
+
+RUN apt-get -o Acquire::https::Verify-Peer=false -o Acquire::https::Verify-Host=false update \
+    && apt-get -o Acquire::https::Verify-Peer=false -o Acquire::https::Verify-Host=false install -y ca-certificates \
+    && update-ca-certificates --fresh
+
+RUN apt-get update -o Acquire::Retries=3 \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN . /etc/buildenv \
     && apt-get update -o Acquire::Retries=3 \
@@ -119,21 +140,40 @@ RUN . /etc/buildenv \
     fi \
     && rm -rf /var/lib/apt/lists/*
 # Install clang-14
-RUN wget -O - https://apt.llvm.org/llvm.sh | bash -s -- 14 && apt-get install -y llvm-14 \
-    && rm -rf /var/lib/apt/lists/* && clang-14 --version && llvm-strip-14 --version \
+RUN apt-get update -o Acquire::Retries=3 \
+    && apt-get install -y --no-install-recommends clang-14 llvm-14 \
+    && rm -rf /var/lib/apt/lists/* \
+    && clang-14 --version \
+    && llvm-strip-14 --version \
     && update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 100 \
     && update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 100 \
     && if [ -x /usr/bin/llvm-strip-14 ] && [ ! -e /usr/local/bin/llvm-strip ]; then ln -s /usr/bin/llvm-strip-14 /usr/local/bin/llvm-strip; fi \
     && if [ ! -e /usr/bin/musl-g++ ]; then ln -s /usr/bin/g++ /usr/bin/musl-g++; fi
 
 RUN . /etc/buildenv \
-    && curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" -o /tmp/go.tgz \
+    && curl -fsSL "${GO_DOWNLOAD_URL}" -o /tmp/go.tgz \
     && rm -rf /usr/local/go \
     && tar -C /usr/local -xzf /tmp/go.tgz \
     && rm -f /tmp/go.tgz
 
+# Install Node.js LTS (used for WebUI/dashboard builds).
 RUN . /etc/buildenv \
-    && wget -q "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-${PROTOC_ARCH}.zip" -O /tmp/protoc.zip \
+    && if [ -z "${NODE_DOWNLOAD_URL}" ]; then \
+         NODE_ARCH="${TARGETARCH}"; \
+         case "${NODE_ARCH}" in amd64) NODE_ARCH=x64;; arm64) NODE_ARCH=arm64;; esac; \
+         NODE_DOWNLOAD_URL="https://npmmirror.com/mirrors/node/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"; \
+       fi \
+    && curl -fsSL "${NODE_DOWNLOAD_URL}" -o /tmp/node.tar.xz \
+    && tar -C /usr/local -xJf /tmp/node.tar.xz --strip-components=1 \
+    && rm -f /tmp/node.tar.xz \
+    && node --version \
+    && npm --version
+
+RUN . /etc/buildenv \
+    && if [ -z "${PROTOC_DOWNLOAD_URL}" ]; then \
+         PROTOC_DOWNLOAD_URL="https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-${PROTOC_ARCH}.zip"; \
+       fi \
+    && wget -q "${PROTOC_DOWNLOAD_URL}" -O /tmp/protoc.zip \
     && unzip -q /tmp/protoc.zip -d /tmp/protoc \
     && install -m 0755 /tmp/protoc/bin/protoc /usr/local/bin/protoc \
     && cp -r /tmp/protoc/include/* /usr/local/include/ \
@@ -149,23 +189,28 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
 ENV RUSTUP_DIST_SERVER="${RUSTUP_DIST_SERVER}"
 ENV RUSTUP_UPDATE_ROOT="${RUSTUP_UPDATE_ROOT}"
 
-RUN set -eux; \
-    . /etc/buildenv \
-    && for toolchain in "${RUST_TOOLCHAIN_HYPERVISOR}" "${RUST_TOOLCHAIN_E2BAPI}" "${RUST_TOOLCHAIN_AGENT}"; do \
-        rustup toolchain install "${toolchain}" --profile minimal; \
-        rustup component add rust-src clippy rustfmt rust-analyzer llvm-tools-preview --toolchain "${toolchain}"; \
-        rustup target add ${TARGET_UNAME_ARCH}-unknown-linux-musl --toolchain "${toolchain}"; \
-    done; \
-    rustup default "${RUST_TOOLCHAIN_DEFAULT}"
+ENV CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
 
 RUN mkdir -p "${CARGO_HOME}" /root/.cargo \
     && printf '[registries.crates-io]\nprotocol = "sparse"\n\n[net]\ngit-fetch-with-cli = true\n' > "${CARGO_HOME}/config.toml" \
+    && if [ -n "${CARGO_REGISTRY_URL}" ]; then \
+        printf '\n[source.crates-io]\nreplace-with = "mirror"\n\n[source.mirror]\nregistry = "%s"\n' "${CARGO_REGISTRY_URL}" >> "${CARGO_HOME}/config.toml"; \
+    fi \
     && ln -sf "${CARGO_HOME}/config.toml" /root/.cargo/config.toml \
     && ln -sf "${CARGO_HOME}/env" /root/.cargo/env
 
+RUN set -eux; \
+    . /etc/buildenv \
+    && for toolchain in "${RUST_TOOLCHAIN_HYPERVISOR}" "${RUST_TOOLCHAIN_E2BAPI}" "${RUST_TOOLCHAIN_AGENT}"; do \
+        rustup -v toolchain install "${toolchain}" --profile minimal; \
+        rustup -v component add rust-src clippy rustfmt rust-analyzer llvm-tools-preview --toolchain "${toolchain}"; \
+        rustup -v target add ${TARGET_UNAME_ARCH}-unknown-linux-musl --toolchain "${toolchain}"; \
+    done; \
+    rustup -v default "${RUST_TOOLCHAIN_DEFAULT}"
+
 RUN . /etc/buildenv \
     && tmp_dir="$(mktemp -d)" \
-    && wget -q "https://github.com/seccomp/libseccomp/releases/download/v${LIBSECCOMP_VERSION}/libseccomp-${LIBSECCOMP_VERSION}.tar.gz" -O "${tmp_dir}/libseccomp.tgz" \
+    && wget -q "${LIBSECCOMP_DOWNLOAD_URL}" -O "${tmp_dir}/libseccomp.tgz" \
     && tar -xzf "${tmp_dir}/libseccomp.tgz" -C "${tmp_dir}" --strip-components=1 \
     && cd "${tmp_dir}" \
     && CC=musl-gcc ./configure --host=${TARGET_UNAME_ARCH}-linux-musl CPPFLAGS="-I/usr/include/${TARGET_UNAME_ARCH}-linux-musl -idirafter /usr/include -idirafter /usr/include/${TARGET_UNAME_ARCH}-linux-gnu" CFLAGS="-O2 -I/usr/include/${TARGET_UNAME_ARCH}-linux-musl -idirafter /usr/include -idirafter /usr/include/${TARGET_UNAME_ARCH}-linux-gnu" --disable-shared --enable-static --prefix=/usr/local/lib64/libseccomp \

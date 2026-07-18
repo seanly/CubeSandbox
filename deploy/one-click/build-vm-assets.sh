@@ -32,6 +32,7 @@ CUBE_KERNEL_VMLINUX="${ONE_CLICK_CUBE_KERNEL_VMLINUX:-${RAW_ARTIFACTS_DIR}/vmlin
 CUBE_KERNEL_PVM_VMLINUX="${ONE_CLICK_CUBE_KERNEL_PVM_VMLINUX:-${RAW_ARTIFACTS_DIR}/vmlinux-pvm}"
 GUEST_IMAGE_DOCKERFILE="${ONE_CLICK_GUEST_IMAGE_DOCKERFILE:-${ROOT_DIR}/deploy/guest-image/Dockerfile}"
 GUEST_IMAGE_CONTEXT_DIR="${ONE_CLICK_GUEST_IMAGE_CONTEXT_DIR:-$(dirname "${GUEST_IMAGE_DOCKERFILE}")}"
+GUEST_IMAGE_BASE="${ONE_CLICK_GUEST_IMAGE_BASE:-}"
 GUEST_IMAGE_REF="${ONE_CLICK_GUEST_IMAGE_REF:-cube-sandbox-guest-image:one-click}"
 GUEST_IMAGE_VERSION="${ONE_CLICK_GUEST_IMAGE_VERSION:-${CUBE_VERSION:-${LATEST_RELEASE_TAG:-$(latest_git_revision "${ROOT_DIR}")}}}"
 
@@ -455,7 +456,11 @@ build_guest_image_artifacts() {
   remove_path_with_optional_sudo "${GUEST_ROOTFS_DIR}" "${GUEST_ROOTFS_TAR}"
 
   log "building guest image from ${GUEST_IMAGE_DOCKERFILE}"
-  docker build -t "${GUEST_IMAGE_REF}" -f "${GUEST_IMAGE_DOCKERFILE}" "${GUEST_IMAGE_CONTEXT_DIR}" >&2
+  local build_args=()
+  if [[ -n "${GUEST_IMAGE_BASE:-}" ]]; then
+    build_args+=(--build-arg "BASE_IMAGE=${GUEST_IMAGE_BASE}")
+  fi
+  docker build -t "${GUEST_IMAGE_REF}" "${build_args[@]}" -f "${GUEST_IMAGE_DOCKERFILE}" "${GUEST_IMAGE_CONTEXT_DIR}" >&2
 
   guest_container_id="$(docker create "${GUEST_IMAGE_REF}")"
   trap 'if [[ -n "${guest_container_id:-}" ]]; then docker rm -f "${guest_container_id}" >/dev/null 2>&1 || true; fi' RETURN
