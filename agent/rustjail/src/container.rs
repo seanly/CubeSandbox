@@ -193,6 +193,15 @@ lazy_static! {
                 uid: Some(0xffffffff),
                 gid: Some(0xffffffff),
             },
+            LinuxDevice {
+                path: "/dev/fuse".to_string(),
+                r#type: "c".to_string(),
+                major: 10,
+                minor: 229,
+                file_mode: Some(0o666),
+                uid: Some(0xffffffff),
+                gid: Some(0xffffffff),
+            },
         ]
     };
 }

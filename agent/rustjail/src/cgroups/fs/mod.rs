@@ -573,6 +573,15 @@ lazy_static! {
                 minor: Some(200),
                 access: "rwm".to_string(),
             },
+
+            // all read/write/mknod to char device /dev/fuse
+            LinuxDeviceCgroup {
+                allow: true,
+                r#type: "c".to_string(),
+                major: Some(10),
+                minor: Some(229),
+                access: "rwm".to_string(),
+            },
         ]
     };
 }

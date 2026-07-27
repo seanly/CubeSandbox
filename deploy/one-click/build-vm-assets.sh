@@ -388,6 +388,17 @@ inject_agent_into_guest_rootfs() {
 
   mkdir -p "${guest_rootfs_dir}/sbin" "${guest_rootfs_dir}/etc"
 
+  # Ensure /dev/fuse exists in the guest rootfs. rustjail normally creates
+  # it inside the container /dev, but when /dev is bind-mounted from the
+  # guest root namespace this static node is needed.
+  mkdir -p "${guest_rootfs_dir}/dev"
+  if [[ ! -e "${guest_rootfs_dir}/dev/fuse" ]]; then
+    mknod -m 0666 "${guest_rootfs_dir}/dev/fuse" c 10 229 2>/dev/null || {
+      require_cmd sudo
+      sudo mknod -m 0666 "${guest_rootfs_dir}/dev/fuse" c 10 229
+    }
+  fi
+
   if [[ -e "${init_path}" || -L "${init_path}" ]]; then
     remove_path_with_optional_sudo "${init_backup_path}"
     mv -f "${init_path}" "${init_backup_path}" 2>/dev/null || {
